@@ -1,0 +1,21 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "postbuild": "if exist public\\build\\.vite\\manifest.json move public\\build\\.vite\\manifest.json public\\build\\",
+    "clean": "rd /s /q public\\build .vite node_modules\\.vite"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "axios": "^1.8.2",
+    "laravel-vite-plugin": "^1.2.0",
+    "tailwindcss": "^3.4.13",
+    "vite": "^5.4.8"
+  },
+  "dependencies": {
+    "particles.js": "^2.0.0",
+    "tailwindcss-animate": "^1.0.7"
+  }
+}
