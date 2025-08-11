@@ -331,7 +331,7 @@
                 <button type="submit" class="btn btn-primary">Se connecter</button>
 
                 <a href="{{ route('password.request') }}" class="forgot-link">Mot de passe oublié ?</a>
-                <a href="{{ route('register') }}" class="register-link">Créer un compte</a>
+                <!-- <a href="{{ route('register') }}" class="register-link">Créer un compte</a> -->
             </form>
         </div>
     </div>

@@ -107,8 +107,63 @@
                     @endforeach
                 </tbody>
             </table>
-            <div class="pagination-wrapper">
-                {{ $users->links() }}
+
+            <!-- Nouvelle pagination modernisée -->
+            <div class="pagination-container">
+                <div class="pagination-wrapper">
+                    <ul class="pagination">
+                        {{-- Previous Page Link --}}
+                        @if ($users->onFirstPage())
+                            <li class="disabled" aria-disabled="true">
+                                <span class="pagination-arrow">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+                                    </svg>
+                                </span>
+                            </li>
+                        @else
+                            <li>
+                                <a href="{{ $users->previousPageUrl() }}" class="pagination-arrow" rel="prev" aria-label="@lang('pagination.previous')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+                                    </svg>
+                                </a>
+                            </li>
+                        @endif
+
+                        {{-- Pagination Elements --}}
+                        @foreach ($users->getUrlRange(1, $users->lastPage()) as $page => $url)
+                            @if ($page == $users->currentPage())
+                                <li class="active" aria-current="page">
+                                    <span class="pagination-number">{{ $page }}</span>
+                                </li>
+                            @else
+                                <li>
+                                    <a href="{{ $url }}" class="pagination-number">{{ $page }}</a>
+                                </li>
+                            @endif
+                        @endforeach
+
+                        {{-- Next Page Link --}}
+                        @if ($users->hasMorePages())
+                            <li>
+                                <a href="{{ $users->nextPageUrl() }}" class="pagination-arrow" rel="next" aria-label="@lang('pagination.next')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                                    </svg>
+                                </a>
+                            </li>
+                        @else
+                            <li class="disabled" aria-disabled="true">
+                                <span class="pagination-arrow">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                                    </svg>
+                                </span>
+                            </li>
+                        @endif
+                    </ul>
+                </div>
             </div>
         </div>
         @endif
@@ -471,9 +526,9 @@
         background: #D60515; /* Rouge plus foncé */
     }
 
-    /* Pagination */
-    .pagination-wrapper {
-        padding: 1.5rem;
+    /* Nouveaux styles pour la pagination modernisée */
+    .pagination-container {
+        margin-top: 2rem;
         display: flex;
         justify-content: center;
     }
@@ -481,42 +536,70 @@
     .pagination {
         display: flex;
         gap: 0.5rem;
+        align-items: center;
+        list-style: none;
+        padding: 0;
     }
 
     .pagination li {
-        list-style: none;
+        margin: 0;
     }
 
-    .pagination a, .pagination span {
+    .pagination-arrow, .pagination-number {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 2.5rem;
-        height: 2.5rem;
-        border-radius: var(--radius-md);
-        font-weight: 500;
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 50%;
+        font-weight: 600;
         text-decoration: none;
+        transition: all 0.3s ease;
+        color: var(--primary);
+        background-color: transparent;
+        border: 2px solid transparent;
     }
 
-    .pagination a {
-        color: var(--black);
-        background: var(--neutral);
+    .pagination a.pagination-arrow:hover,
+    .pagination a.pagination-number:hover {
+        background-color: rgba(26, 95, 35, 0.1);
+        transform: translateY(-2px);
     }
 
-    .pagination a:hover {
-        background: #E0E0E0; /* Gris légèrement plus foncé */
+    .pagination .active .pagination-number {
+        background-color: var(--primary);
+        color: white;
+        border-color: var(--primary);
+        box-shadow: 0 4px 12px rgba(26, 95, 35, 0.2);
     }
 
-    .pagination .active span {
-        background: var(--primary);
-        color: var(--white);
+    .pagination .disabled .pagination-arrow {
+        color: #ccc;
+        cursor: not-allowed;
     }
 
-    .pagination .disabled span {
-        color: var(--black);
-        background: var(--neutral);
-        opacity: 0.5;
+    .pagination-arrow svg {
+        transition: transform 0.3s ease;
     }
+
+    .pagination a.pagination-arrow:hover svg {
+        transform: scale(1.2);
+    }
+
+    /* Animation pour le changement de page */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .pagination li {
+        animation: fadeIn 0.4s ease forwards;
+    }
+
+    /* Délai d'animation pour chaque élément */
+    .pagination li:nth-child(1) { animation-delay: 0.1s; }
+    .pagination li:nth-child(2) { animation-delay: 0.2s; }
+    .pagination li:nth-child(3) { animation-delay: 0.3s; }
 
     /* Responsive */
     @media (max-width: 768px) {
@@ -539,6 +622,13 @@
         .btn {
             width: 100%;
         }
+
+        /* Adaptation de la pagination pour mobile */
+        .pagination-arrow, .pagination-number {
+            width: 2.5rem;
+            height: 2.5rem;
+            font-size: 0.9rem;
+        }
     }
 
     @media (max-width: 480px) {
@@ -555,6 +645,16 @@
         .users-table th,
         .users-table td {
             padding: 0.75rem 0.5rem;
+        }
+
+        /* Pagination sur très petits écrans */
+        .pagination {
+            gap: 0.25rem;
+        }
+
+        .pagination-arrow, .pagination-number {
+            width: 2.25rem;
+            height: 2.25rem;
         }
     }
 </style>
@@ -573,6 +673,30 @@
             button.addEventListener('mouseleave', () => {
                 button.style.transform = '';
                 button.style.boxShadow = '';
+            });
+        });
+
+        // Animation pour la nouvelle pagination
+        const paginationItems = document.querySelectorAll('.pagination a');
+
+        paginationItems.forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                item.style.transform = 'translateY(-3px)';
+                item.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.1)';
+            });
+
+            item.addEventListener('mouseleave', () => {
+                item.style.transform = '';
+                item.style.boxShadow = '';
+            });
+
+            // Effet de clic
+            item.addEventListener('mousedown', () => {
+                item.style.transform = 'translateY(1px)';
+            });
+
+            item.addEventListener('mouseup', () => {
+                item.style.transform = 'translateY(-3px)';
             });
         });
     });

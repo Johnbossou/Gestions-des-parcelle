@@ -15,7 +15,7 @@ class UtilisateurSeeder extends Seeder
             [
                 'name' => 'Jean Dupont',
                 'email' => 'jean.dupont@mairie.bj',
-                'password' => Hash::make  ('password123'),
+                'password' => Hash::make('password123'),
                 'role' => 'chef_service',
             ],
             [
@@ -36,17 +36,36 @@ class UtilisateurSeeder extends Seeder
                 'password' => Hash::make('password123'),
                 'role' => 'chef_service',
             ],
+            [
+                'name' => 'Sophie Gbedji', // Nouvel ajout
+                'email' => 'sophie.gbedji@mairie.bj',
+                'password' => Hash::make('password123'),
+                'role' => 'chef_division',
+            ],
         ];
 
         foreach ($users as $userData) {
-            $user = User::create([
-                'name' => $userData['name'],
-                'email' => $userData['email'],
-                'password' => $userData['password'],
-                'email_verified_at' => now(),
-                'remember_token' => Str::random(10),
-            ]);
-            $user->assignRole(Role::findByName($userData['role'], 'web'));
+            // Vérifier si l'utilisateur existe déjà
+            $user = User::where('email', $userData['email'])->first();
+
+            if (!$user) {
+                // Si l'utilisateur n'existe pas, on le crée
+                $user = User::create([
+                    'name' => $userData['name'],
+                    'email' => $userData['email'],
+                    'password' => $userData['password'],
+                    'email_verified_at' => now(),
+                    'remember_token' => Str::random(10),
+                ]);
+            }
+
+            // Créer ou récupérer le rôle
+            $role = Role::firstOrCreate(['name' => $userData['role'], 'guard_name' => 'web']);
+
+            // Assigner le rôle seulement si l'utilisateur ne l'a pas déjà
+            if (!$user->hasRole($role->name)) {
+                $user->assignRole($role);
+            }
         }
     }
 }

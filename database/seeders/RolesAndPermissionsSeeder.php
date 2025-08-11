@@ -21,6 +21,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-users',
             'manage-litiges',
             'view-structure',
+            'create-view-users',
         ];
 
         foreach ($permissions as $permission) {
@@ -67,6 +68,20 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-parcels',
             'export-parcels',
             'filter-sort-parcels',
+            'view-structure',
+        ]);
+
+        $roleChefDivision = Role::updateOrCreate(
+            ['name' => 'chef_division', 'guard_name' => 'web'],
+            ['guard_name' => 'web']
+        );
+        $roleChefDivision->syncPermissions([
+            'create-parcelles',       // Peut créer
+            'view-parcels',           // Peut voir
+            'export-parcels',
+            'filter-sort-parcels',
+            'edit-coordinates',
+            'manage-litiges',
             'view-structure',
         ]);
     }

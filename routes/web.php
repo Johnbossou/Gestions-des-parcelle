@@ -18,6 +18,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->name('register');
     Route::get('/password/reset', [AuthController::class, 'showPasswordResetForm'])->name('password.request');
     Route::post('/password/email', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
+    Route::get('/password/reset/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
+    Route::post('/password/reset', [AuthController::class, 'resetPassword'])->name('password.update');
 });
 Route::middleware(['auth', 'permission:export-parcels'])->group(function () {
     Route::get('/parcelles/export', [ParcelleController::class, 'export'])
