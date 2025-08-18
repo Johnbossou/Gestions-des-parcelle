@@ -16,40 +16,44 @@ class UtilisateurSeeder extends Seeder
                 'name' => 'Jean Dupont',
                 'email' => 'jean.dupont@mairie.bj',
                 'password' => Hash::make('password123'),
-                'role' => 'chef_service',
+                'role' => 'Superviseur_administratif', // Ancien: chef_service
             ],
             [
                 'name' => 'Marie Koffi',
                 'email' => 'marie.koffi@mairie.bj',
                 'password' => Hash::make('password123'),
-                'role' => 'secretaire_executif',
+                'role' => 'Consultant', // Ancien: secretaire_executif
             ],
             [
                 'name' => 'Paul Ahomadegbe',
                 'email' => 'paul.dsi@mairie.bj',
                 'password' => Hash::make('password123'),
-                'role' => 'dsi',
+                'role' => 'Administrateur', // Ancien: dsi
             ],
             [
                 'name' => 'Aline Sossou',
                 'email' => 'aline.sossou@mairie.bj',
                 'password' => Hash::make('password123'),
-                'role' => 'chef_service',
+                'role' => 'Superviseur_administratif', // Ancien: chef_service
             ],
             [
-                'name' => 'Sophie Gbedji', // Nouvel ajout
+                'name' => 'Sophie Gbedji',
                 'email' => 'sophie.gbedji@mairie.bj',
                 'password' => Hash::make('password123'),
-                'role' => 'chef_division',
+                'role' => 'Chef_Administratif', // Ancien: chef_division
+            ],
+            [
+                'name' => 'Koffi Mensah', // Nouvel utilisateur Directeur
+                'email' => 'koffi.mensah@mairie.bj',
+                'password' => Hash::make('DirectorPass123!'), // Mot de passe plus robuste pour le Directeur
+                'role' => 'Directeur',
             ],
         ];
 
         foreach ($users as $userData) {
-            // Vérifier si l'utilisateur existe déjà
             $user = User::where('email', $userData['email'])->first();
 
             if (!$user) {
-                // Si l'utilisateur n'existe pas, on le crée
                 $user = User::create([
                     'name' => $userData['name'],
                     'email' => $userData['email'],
@@ -59,10 +63,10 @@ class UtilisateurSeeder extends Seeder
                 ]);
             }
 
-            // Créer ou récupérer le rôle
-            $role = Role::firstOrCreate(['name' => $userData['role'], 'guard_name' => 'web']);
+            $role = Role::firstOrCreate(
+                ['name' => $userData['role'], 'guard_name' => 'web']
+            );
 
-            // Assigner le rôle seulement si l'utilisateur ne l'a pas déjà
             if (!$user->hasRole($role->name)) {
                 $user->assignRole($role);
             }

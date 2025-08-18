@@ -288,7 +288,62 @@
                 @enderror
             </div>
 
-            <!-- Actions du formulaire -->
+            <!-- Validation Directeur - Version améliorée -->
+            @if(auth()->check() && auth()->user()->hasRole('Superviseur_administratif'))
+            <div class="director-validation-section">
+                <div class="validation-header">
+                    <div class="validation-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                    </div>
+                    <h3 class="validation-title">Validation Hiérarchique</h3>
+                </div>
+
+                <div class="validation-form-group">
+                    <label for="director_password" class="validation-label">
+                        <span class="label-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </span>
+                        <span class="label-text">Authentification du Directeur <span class="required-asterisk">*</span></span>
+                    </label>
+
+                    <div class="password-input-container">
+                        <input type="password"
+                            id="director_password"
+                            name="director_password"
+                            class="validation-input @error('director_password') input-error @enderror"
+                            required
+                            placeholder="Saisir les identifiants du Directeur">
+                        <button type="button" class="toggle-password" aria-label="Afficher le mot de passe">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    @error('director_password')
+                        <div class="validation-error">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>{{ $message }}</span>
+                        </div>
+                    @enderror
+
+                    <div class="validation-help">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>Veuillez demander au Directeur présent de saisir ses identifiants</span>
+                    </div>
+                </div>
+            </div>
+            @endif
+                        <!-- Actions du formulaire -->
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -558,6 +613,146 @@
         }
     }
 </style>
+<style>
+/* Style spécifique à la section de validation */
+.director-validation-section {
+    margin: 2rem 0;
+    border-left: 4px solid #1a5f23;
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0 8px 8px 0;
+}
+
+.validation-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.validation-icon svg {
+    width: 24px;
+    height: 24px;
+    stroke: #1a5f23;
+    stroke-width: 2;
+    margin-right: 12px;
+}
+
+.validation-title {
+    margin: 0;
+    color: #1a5f23;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.validation-form-group {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.validation-label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.label-icon svg {
+    width: 18px;
+    height: 18px;
+    stroke: #6b7280;
+    stroke-width: 2;
+    margin-right: 8px;
+}
+
+.required-asterisk {
+    color: #e30613;
+    margin-left: 4px;
+}
+
+.password-input-container {
+    position: relative;
+}
+
+.validation-input {
+    width: 100%;
+    padding: 12px 16px;
+    padding-right: 40px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.9375rem;
+    transition: all 0.3s ease;
+    background-color: #fff;
+}
+
+.validation-input:focus {
+    outline: none;
+    border-color: #1a5f23;
+    box-shadow: 0 0 0 3px rgba(26, 95, 35, 0.15);
+}
+
+.validation-input.input-error {
+    border-color: #e30613;
+    animation: shake 0.5s;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.toggle-password svg {
+    width: 20px;
+    height: 20px;
+    stroke: #6b7280;
+    stroke-width: 2;
+}
+
+.validation-error {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+    color: #e30613;
+    font-size: 0.875rem;
+}
+
+.validation-error svg {
+    width: 16px;
+    height: 16px;
+    stroke: #e30613;
+    stroke-width: 2;
+    margin-right: 6px;
+}
+
+.validation-help {
+    display: flex;
+    align-items: center;
+    margin-top: 12px;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.validation-help svg {
+    width: 16px;
+    height: 16px;
+    stroke: #6b7280;
+    stroke-width: 2;
+    margin-right: 6px;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+</style>
+
 
 <script>
     // Animation pour les champs en erreur
@@ -578,5 +773,14 @@
             errorFields[0].focus();
         }
     });
+</script>
+<script>
+// Script minimal pour le toggle password (optionnel mais recommandé)
+document.querySelector('.toggle-password')?.addEventListener('click', function() {
+    const input = document.querySelector('#director_password');
+    const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+    input.setAttribute('type', type);
+    this.querySelector('svg').style.stroke = type === 'password' ? '#6b7280' : '#1a5f23';
+});
 </script>
 @endsection

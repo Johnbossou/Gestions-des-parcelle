@@ -2,7 +2,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Parcelle;
+use Illuminate\Support\Facades\Hash;
 use App\Models\AuditLog;
+use App\Models\ValidationLog; // Ajout de l'import
+use Illuminate\Support\Facades\DB;
+use App\Models\User;
 use App\Http\Exports\ParcellesExport;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -14,7 +18,9 @@ class ParcelleController extends Controller
     public function __construct()
     {
         $this->middleware('auth:sanctum')->except(['index', 'create', 'show', 'edit', 'editCoordinates']);
+        $this->middleware('require.director.approval')->only(['update']);
         $this->middleware('permission:view-parcels')->only(['index', 'show', 'filter']);
+        $this->middleware('require.director.approval')->only(['update']);
         $this->middleware('permission:create-parcelles')->only(['create', 'store']);
         $this->middleware('permission:edit-parcelles')->only(['edit', 'update']);
         $this->middleware('permission:delete-parcels')->only('destroy');
@@ -22,12 +28,13 @@ class ParcelleController extends Controller
         $this->middleware('permission:manage-litiges')->only(['store', 'update']);
     }
 
-    public function index(Request $request)
+public function index(Request $request)
     {
-        $query = Parcelle::query();
-        // Appliquer les filtres
+        $query = Parcelle::query()->with(['agent', 'responsable']); // Chargement anticipé des relations
+
+        // Appliquer les filtres avec normalisation pour les champs textuels
         if ($request->filled('arrondissement')) {
-            $query->where('arrondissement', $request->arrondissement);
+            $query->whereRaw('LOWER(arrondissement) = ?', [strtolower($request->arrondissement)]);
         }
         if ($request->filled('type_terrain')) {
             $query->where('type_terrain', $request->type_terrain);
@@ -39,10 +46,8 @@ class ParcelleController extends Controller
             $query->where('litige', $request->litige === '1');
         }
         if ($request->filled('structure')) {
-            $query->where('structure', 'like', '%' . $request->structure . '%');
+            $query->whereRaw('LOWER(structure) LIKE ?', ['%' . strtolower($request->structure) . '%']);
         }
-        // ... avant pagination, dans index()
-
         if ($request->filled('ancienne_superficie_min')) {
             $query->where('ancienne_superficie', '>=', $request->ancienne_superficie_min);
         }
@@ -50,7 +55,12 @@ class ParcelleController extends Controller
             $query->where('ancienne_superficie', '<=', $request->ancienne_superficie_max);
         }
 
-        $parcelles = $query->paginate(10)->appends($request->query());
+        // Tri par défaut sur updated_at pour prioriser les parcelles récemment modifiées
+        $query->orderBy('updated_at', 'desc');
+
+        $parcelles = $query->paginate(10)->appends($request->
+query());
+
         $stats = [
             'total' => Parcelle::count(),
             'arrondissements' => Parcelle::distinct('arrondissement')->count(),
@@ -61,9 +71,11 @@ class ParcelleController extends Controller
             'agricole' => Parcelle::where('type_terrain', 'Agricole')->count(),
             'institutionnel' => Parcelle::where('type_terrain', 'Institutionnel')->count(),
         ];
-        $arrondissements = Parcelle::distinct('arrondissement')->pluck('arrondissement')->toArray();
+
+        $arrondissements = Parcelle::select('arrondissement')->distinct()->orderBy('arrondissement')->pluck('arrondissement')->toArray();
         $types_terrain = ['Résidentiel', 'Commercial', 'Agricole', 'Institutionnel', 'Autre'];
         $statuts = ['attribué', 'non attribué'];
+
         return view('parcelles.index', compact('parcelles', 'stats', 'arrondissements', 'types_terrain', 'statuts'));
     }
 
@@ -117,9 +129,19 @@ class ParcelleController extends Controller
             : redirect()->route('dashboard')->with('success', 'Parcelle créée avec succès.');
     }
 
-
     public function show(Parcelle $parcelle)
     {
+        // Charge toutes les relations nécessaires en une seule requête
+        $parcelle->load([
+            'agent',
+            'responsable',
+            'createdBy',
+            'updatedBy',
+            'validationLogs' => function($query) {
+                $query->latest()->with('director');
+            }
+        ]);
+
         return view('parcelles.show', compact('parcelle'));
     }
 
@@ -130,6 +152,7 @@ class ParcelleController extends Controller
 
     public function update(Request $request, Parcelle $parcelle)
     {
+        // Validation des données
         $data = $request->validate([
             'numero' => 'required|numeric|unique:parcelles,numero,' . $parcelle->id,
             'arrondissement' => 'required|string',
@@ -150,10 +173,27 @@ class ParcelleController extends Controller
             'structure' => 'nullable|string',
         ]);
 
+        // Vérification supplémentaire pour les superviseurs
+        if (Auth::user()->hasRole('Superviseur_administratif')) {
+            $request->validate([
+                'director_password' => 'required|string'
+            ]);
+
+            $director = User::role('Directeur')->first();
+            if (!$director || !Hash::check($request->director_password, $director->password)) {
+                return back()
+                    ->withErrors(['director_password' => 'Mot de passe du Directeur incorrect'])
+                    ->withInput();
+            }
+        }
+
         $data['updated_by'] = Auth::id();
         $changes = array_diff_assoc($data, $parcelle->toArray());
-        $parcelle->update($data);
-        if ($changes) {
+
+        if (!empty($changes)) {
+            $parcelle->update($data);
+
+            // Journalisation standard
             AuditLog::create([
                 'user_id' => Auth::id(),
                 'action' => 'update',
@@ -161,11 +201,22 @@ class ParcelleController extends Controller
                 'model_id' => $parcelle->id,
                 'changes' => json_encode($changes),
             ]);
+
+            // Journalisation spécifique pour les superviseurs
+            if (Auth::user()->hasRole('Superviseur_administratif')) {
+                ValidationLog::create([ // Utilisation du modèle ValidationLog
+                    'parcelle_id' => $parcelle->id, // Ajout crucial
+                    'action' => 'parcelle_update',
+                    'user_id' => Auth::id(),
+                    'director_id' => $director->id,
+                    'ip_address' => $request->ip(),
+                ]);
+            }
         }
 
         return $request->expectsJson()
             ? response()->json($parcelle)
-            : redirect()->route('dashboard')->with('success', 'Parcelle modifiée avec succès.');
+            : redirect()->route('parcelles.index')->with('success', 'Parcelle modifiée avec succès.');
     }
 
     public function destroy(Parcelle $parcelle)
@@ -256,7 +307,7 @@ class ParcelleController extends Controller
 
         if ($format === 'pdf') {
             $parcelles = $export->collection();
-            $pdf = Pdf::loadView('exports.parcelles', [ // Utilisez Pdf au lieu de \PDF
+            $pdf = Pdf::loadView('exports.parcelles', [
                 'parcelles' => $parcelles,
                 'filters' => $filters
             ]);

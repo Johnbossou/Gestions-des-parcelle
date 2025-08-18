@@ -9,7 +9,7 @@ class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        // Créer les permissions avec guard_name = web
+        // Créer les permissions avec guard_name = web (inchangées)
         $permissions = [
             'create-parcelles',
             'edit-parcelles',
@@ -31,15 +31,14 @@ class RolesAndPermissionsSeeder extends Seeder
             );
         }
 
-        // Créer les rôles avec guard_name = web
-        $roleChef = Role::updateOrCreate(
-            ['name' => 'chef_service', 'guard_name' => 'web'],
+        // Rôles mis à jour selon vos instructions
+        $roleSuperviseur = Role::updateOrCreate(
+            ['name' => 'Superviseur_administratif', 'guard_name' => 'web'], // Ancien: chef_service
             ['guard_name' => 'web']
         );
-        $roleChef->syncPermissions([
+        $roleSuperviseur->syncPermissions([
             'create-parcelles',
             'edit-parcelles',
-            'delete-parcelles',
             'view-parcels',
             'export-parcels',
             'filter-sort-parcels',
@@ -48,22 +47,22 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-structure',
         ]);
 
-        $roleSecretaire = Role::updateOrCreate(
-            ['name' => 'secretaire_executif', 'guard_name' => 'web'],
+        $roleConsultant = Role::updateOrCreate(
+            ['name' => 'Consultant', 'guard_name' => 'web'], // Ancien: secretaire_executif
             ['guard_name' => 'web']
         );
-        $roleSecretaire->syncPermissions([
+        $roleConsultant->syncPermissions([
             'view-parcels',
             'export-parcels',
             'filter-sort-parcels',
             'view-structure',
         ]);
 
-        $roleDSI = Role::updateOrCreate(
-            ['name' => 'dsi', 'guard_name' => 'web'],
+        $roleAdministrateur = Role::updateOrCreate(
+            ['name' => 'Administrateur', 'guard_name' => 'web'], // Ancien: dsi
             ['guard_name' => 'web']
         );
-        $roleDSI->syncPermissions([
+        $roleAdministrateur->syncPermissions([
             'manage-users',
             'view-parcels',
             'export-parcels',
@@ -71,17 +70,29 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-structure',
         ]);
 
-        $roleChefDivision = Role::updateOrCreate(
-            ['name' => 'chef_division', 'guard_name' => 'web'],
+        $roleChefAdmin = Role::updateOrCreate(
+            ['name' => 'Chef_Administratif', 'guard_name' => 'web'], // Ancien: chef_division
             ['guard_name' => 'web']
         );
-        $roleChefDivision->syncPermissions([
-            'create-parcelles',       // Peut créer
-            'view-parcels',           // Peut voir
+        $roleChefAdmin->syncPermissions([
+            'create-parcelles',
+            'view-parcels',
             'export-parcels',
             'filter-sort-parcels',
             'edit-coordinates',
             'manage-litiges',
+            'view-structure',
+        ]);
+
+        // Ajout du nouveau rôle Directeur (avec mêmes permissions que Consultant)
+        $roleDirecteur = Role::updateOrCreate(
+            ['name' => 'Directeur', 'guard_name' => 'web'],
+            ['guard_name' => 'web']
+        );
+        $roleDirecteur->syncPermissions([
+            'view-parcels',
+            'export-parcels',
+            'filter-sort-parcels',
             'view-structure',
         ]);
     }

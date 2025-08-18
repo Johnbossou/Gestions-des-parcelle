@@ -189,15 +189,53 @@
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Créé par</span>
-                        <span class="detail-value">{{ optional($parcelle->createdBy)->name ?? 'N/A' }}</span>
+                        <span class="detail-value">
+                            {{ optional($parcelle->createdBy)->name ?? 'N/A' }}
+                            @if($parcelle->createdBy && $parcelle->createdBy->hasRole('Superviseur_administratif'))
+                                (Superviseur Administratif)
+                            @elseif($parcelle->createdBy && $parcelle->createdBy->hasRole('Chef_Administratif'))
+                                (Chef Administratif)
+                            @else
+                                (Aucun rôle)
+                            @endif
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Date de création</span>
+                        <span class="detail-value">
+                            {{ $parcelle->created_at ? $parcelle->created_at->format('d/m/Y H:i') : 'N/A' }}
+                        </span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Mis à jour par</span>
                         <span class="detail-value">{{ optional($parcelle->updatedBy)->name ?? 'N/A' }}</span>
                     </div>
+                    <!-- Nouveau champ : Directeur ayant validé -->
+                    <div class="detail-item">
+                        <span class="detail-label">Validé par</span>
+                        <span class="detail-value">
+                            @if($parcelle->validationLogs->isNotEmpty() && $parcelle->validationLogs->first()->director)
+                                {{ $parcelle->validationLogs->first()->director->name }}
+                            @else
+                                N/A
+                            @endif
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Date de validation</span>
+                        <span class="detail-value">
+                            @if($parcelle->validationLogs->isNotEmpty())
+                                {{ $parcelle->validationLogs->first()->created_at->format('d/m/Y H:i') }}
+                            @else
+                                N/A
+                            @endif
+                        </span>
+                    </div>
                     <div class="detail-item">
                         <span class="detail-label">Date de mise à jour</span>
-                        <span class="detail-value">{{ $parcelle->date_mise_a_jour ? $parcelle->date_mise_a_jour->format('d/m/Y H:i') : 'N/A' }}</span>
+                        <span class="detail-value">
+                            {{ $parcelle->date_mise_a_jour ? $parcelle->date_mise_a_jour->format('d/m/Y H:i') : 'N/A' }}
+                        </span>
                     </div>
                 </div>
             </div>

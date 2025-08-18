@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ValidationLog; // <-- Ajoutez cette ligne
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Parcelle extends Model
 {
@@ -34,14 +36,12 @@ class Parcelle extends Model
         'updated_by'
     ];
 
-    // Convertir automatiquement date_mise_a_jour en objet Carbon
     protected $dates = [
         'date_mise_a_jour',
         'created_at',
         'updated_at',
     ];
 
-    // Définir les types de données pour certains champs
     protected $casts = [
         'litige' => 'boolean',
         'date_mise_a_jour' => 'date',
@@ -49,7 +49,6 @@ class Parcelle extends Model
         'updated_at' => 'datetime',
     ];
 
-    // Écouteurs d'événements pour created_by, updated_by et ecart_superficie
     protected static function booted()
     {
         static::creating(function ($parcelle) {
@@ -87,5 +86,17 @@ class Parcelle extends Model
     public function updatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    // Nouvelle relation avec les logs de validation
+    public function validationLogs(): HasMany
+    {
+        return $this->hasMany(ValidationLog::class)->latest();
+    }
+
+    // Accesseur pour la dernière validation
+    public function getLastValidationAttribute()
+    {
+        return $this->validationLogs()->with('director')->first();
     }
 }
