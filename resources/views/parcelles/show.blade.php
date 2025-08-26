@@ -74,7 +74,7 @@
                         <span class="detail-value">{{ $parcelle->lot ?? 'N/A' }}</span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">Désignation</span>
+                        <span class="detail-label">Adressage</span>
                         <span class="detail-value">{{ $parcelle->designation ?? 'N/A' }}</span>
                     </div>
                     <div class="detail-item">
@@ -106,7 +106,7 @@
                         </span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">Motif</span>
+                        <span class="detail-label">Motif d'occupation</span>
                         <span class="detail-value">{{ $parcelle->motif ?? 'N/A' }}</span>
                     </div>
                     <div class="detail-item">

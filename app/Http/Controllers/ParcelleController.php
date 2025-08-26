@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Parcelle;
 use Illuminate\Support\Facades\Hash;
 use App\Models\AuditLog;
-use App\Models\ValidationLog; // Ajout de l'import
+use App\Models\ValidationLog;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Http\Exports\ParcellesExport;
@@ -28,7 +28,7 @@ class ParcelleController extends Controller
         $this->middleware('permission:manage-litiges')->only(['store', 'update']);
     }
 
-public function index(Request $request)
+    public function index(Request $request)
     {
         $query = Parcelle::query()->with(['agent', 'responsable']); // Chargement anticipé des relations
 
@@ -58,8 +58,7 @@ public function index(Request $request)
         // Tri par défaut sur updated_at pour prioriser les parcelles récemment modifiées
         $query->orderBy('updated_at', 'desc');
 
-        $parcelles = $query->paginate(10)->appends($request->
-query());
+        $parcelles = $query->paginate(10)->appends($request->query());
 
         $stats = [
             'total' => Parcelle::count(),
@@ -81,7 +80,9 @@ query());
 
     public function create()
     {
-        return view('parcelles.create');
+        // Récupère tous les utilisateurs pour remplir les listes déroulantes Agent et Responsable
+        $users = User::all();
+        return view('parcelles.create', compact('users'));
     }
 
     public function store(Request $request)
@@ -103,6 +104,10 @@ query());
             'litige' => 'required|boolean',
             'details_litige' => 'nullable|string',
             'structure' => 'nullable|string',
+            'agent_id' => 'nullable|exists:users,id',
+            'agent_name' => 'nullable|string|required_if:agent_id,custom',
+            'responsable_id' => 'nullable|exists:users,id',
+            'responsable_name' => 'nullable|string|required_if:responsable_id,custom',
         ]);
 
         // Générer un numéro unique
@@ -113,6 +118,40 @@ query());
         $data['numero'] = $numero;
         $data['created_by'] = Auth::id();
         $data['updated_by'] = Auth::id();
+
+        // Gérer agent_id/agent_name
+        if ($request->filled('agent_name') && $request->agent_id === 'custom') {
+            // Créer un nouvel utilisateur pour l'agent
+            $agent = User::create([
+                'name' => $request->agent_name,
+                'email' => 'agent_' . strtolower(str_replace(' ', '_', $request->agent_name)) . '_' . time() . '@example.com',
+                'password' => Hash::make('temporary_password'),
+            ]);
+            $agent->assignRole('agent'); // Assumer l'utilisation de Spatie Laravel Permission
+            $data['agent_id'] = $agent->id;
+        } elseif ($request->filled('agent_id') && $request->agent_id !== 'custom') {
+            $data['agent_id'] = $request->agent_id;
+        } else {
+            $data['agent_id'] = null;
+        }
+        unset($data['agent_name']);
+
+        // Gérer responsable_id/responsable_name
+        if ($request->filled('responsable_name') && $request->responsable_id === 'custom') {
+            // Créer un nouvel utilisateur pour le responsable
+            $responsable = User::create([
+                'name' => $request->responsable_name,
+                'email' => 'responsable_' . strtolower(str_replace(' ', '_', $request->responsable_name)) . '_' . time() . '@example.com',
+                'password' => Hash::make('temporary_password'),
+            ]);
+            $responsable->assignRole('responsable'); // Assumer l'utilisation de Spatie Laravel Permission
+            $data['responsable_id'] = $responsable->id;
+        } elseif ($request->filled('responsable_id') && $request->responsable_id !== 'custom') {
+            $data['responsable_id'] = $request->responsable_id;
+        } else {
+            $data['responsable_id'] = null;
+        }
+        unset($data['responsable_name']);
 
         $parcelle = Parcelle::create($data);
 
@@ -147,7 +186,8 @@ query());
 
     public function edit(Parcelle $parcelle)
     {
-        return view('parcelles.edit', compact('parcelle'));
+        $users = User::all(); // Ajouter les utilisateurs pour les listes déroulantes
+        return view('parcelles.edit', compact('parcelle', 'users'));
     }
 
     public function update(Request $request, Parcelle $parcelle)
@@ -171,10 +211,14 @@ query());
             'litige' => 'required|boolean',
             'details_litige' => 'nullable|string',
             'structure' => 'nullable|string',
+            'agent_id' => 'nullable|exists:users,id',
+            'agent_name' => 'nullable|string|required_if:agent_id,custom',
+            'responsable_id' => 'nullable|exists:users,id',
+            'responsable_name' => 'nullable|string|required_if:responsable_id,custom',
         ]);
 
-        // Vérification supplémentaire pour les superviseurs
-        if (Auth::user()->hasRole('Superviseur_administratif')) {
+        // Vérification supplémentaire pour les superviseurs (ancien: Superviseur_administratif)
+        if (Auth::user()->hasRole('chef_service')) {
             $request->validate([
                 'director_password' => 'required|string'
             ]);
@@ -186,6 +230,38 @@ query());
                     ->withInput();
             }
         }
+
+        // Gérer agent_id/agent_name
+        if ($request->filled('agent_name') && $request->agent_id === 'custom') {
+            $agent = User::create([
+                'name' => $request->agent_name,
+                'email' => 'agent_' . strtolower(str_replace(' ', '_', $request->agent_name)) . '_' . time() . '@example.com',
+                'password' => Hash::make('temporary_password'),
+            ]);
+            $agent->assignRole('agent');
+            $data['agent_id'] = $agent->id;
+        } elseif ($request->filled('agent_id') && $request->agent_id !== 'custom') {
+            $data['agent_id'] = $request->agent_id;
+        } else {
+            $data['agent_id'] = null;
+        }
+        unset($data['agent_name']);
+
+        // Gérer responsable_id/responsable_name
+        if ($request->filled('responsable_name') && $request->responsable_id === 'custom') {
+            $responsable = User::create([
+                'name' => $request->responsable_name,
+                'email' => 'responsable_' . strtolower(str_replace(' ', '_', $request->responsable_name)) . '_' . time() . '@example.com',
+                'password' => Hash::make('temporary_password'),
+            ]);
+            $responsable->assignRole('responsable');
+            $data['responsable_id'] = $responsable->id;
+        } elseif ($request->filled('responsable_id') && $request->responsable_id !== 'custom') {
+            $data['responsable_id'] = $request->responsable_id;
+        } else {
+            $data['responsable_id'] = null;
+        }
+        unset($data['responsable_name']);
 
         $data['updated_by'] = Auth::id();
         $changes = array_diff_assoc($data, $parcelle->toArray());
@@ -202,10 +278,10 @@ query());
                 'changes' => json_encode($changes),
             ]);
 
-            // Journalisation spécifique pour les superviseurs
-            if (Auth::user()->hasRole('Superviseur_administratif')) {
-                ValidationLog::create([ // Utilisation du modèle ValidationLog
-                    'parcelle_id' => $parcelle->id, // Ajout crucial
+            // Journalisation spécifique pour les superviseurs (ancien: Superviseur_administratif)
+            if (Auth::user()->hasRole('chef_service')) {
+                ValidationLog::create([
+                    'parcelle_id' => $parcelle->id,
                     'action' => 'parcelle_update',
                     'user_id' => Auth::id(),
                     'director_id' => $director->id,

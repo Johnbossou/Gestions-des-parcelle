@@ -4,12 +4,13 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use App\Models\User;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        // Créer les permissions avec guard_name = web (inchangées)
+        // Créer les permissions avec guard_name = web
         $permissions = [
             'create-parcelles',
             'edit-parcelles',
@@ -31,12 +32,12 @@ class RolesAndPermissionsSeeder extends Seeder
             );
         }
 
-        // Rôles mis à jour selon vos instructions
-        $roleSuperviseur = Role::updateOrCreate(
-            ['name' => 'Superviseur_administratif', 'guard_name' => 'web'], // Ancien: chef_service
+        // 1. Rôle chef_service (ancien Superviseur_administratif)
+        $roleChefService = Role::updateOrCreate(
+            ['name' => 'chef_service', 'guard_name' => 'web'],
             ['guard_name' => 'web']
         );
-        $roleSuperviseur->syncPermissions([
+        $roleChefService->syncPermissions([
             'create-parcelles',
             'edit-parcelles',
             'view-parcels',
@@ -47,8 +48,21 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-structure',
         ]);
 
+        // 2. Rôle secretaire_executif (distinct de Consultant)
+        $roleSecretaire = Role::updateOrCreate(
+            ['name' => 'secretaire_executif', 'guard_name' => 'web'],
+            ['guard_name' => 'web']
+        );
+        $roleSecretaire->syncPermissions([
+            'view-parcels',
+            'export-parcels',
+            'filter-sort-parcels',
+            'view-structure',
+        ]);
+
+        // 3. Rôle Consultant (distinct de secretaire_executif)
         $roleConsultant = Role::updateOrCreate(
-            ['name' => 'Consultant', 'guard_name' => 'web'], // Ancien: secretaire_executif
+            ['name' => 'Consultant', 'guard_name' => 'web'],
             ['guard_name' => 'web']
         );
         $roleConsultant->syncPermissions([
@@ -58,11 +72,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-structure',
         ]);
 
-        $roleAdministrateur = Role::updateOrCreate(
-            ['name' => 'Administrateur', 'guard_name' => 'web'], // Ancien: dsi
+        // 4. Rôle dsi (ancien Administrateur)
+        $roleDsi = Role::updateOrCreate(
+            ['name' => 'dsi', 'guard_name' => 'web'],
             ['guard_name' => 'web']
         );
-        $roleAdministrateur->syncPermissions([
+        $roleDsi->syncPermissions([
             'manage-users',
             'view-parcels',
             'export-parcels',
@@ -70,11 +85,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-structure',
         ]);
 
-        $roleChefAdmin = Role::updateOrCreate(
-            ['name' => 'Chef_Administratif', 'guard_name' => 'web'], // Ancien: chef_division
+        // 5. Rôle chef_division (ancien Chef_Administratif)
+        $roleChefDivision = Role::updateOrCreate(
+            ['name' => 'chef_division', 'guard_name' => 'web'],
             ['guard_name' => 'web']
         );
-        $roleChefAdmin->syncPermissions([
+        $roleChefDivision->syncPermissions([
             'create-parcelles',
             'view-parcels',
             'export-parcels',
@@ -84,7 +100,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-structure',
         ]);
 
-        // Ajout du nouveau rôle Directeur (avec mêmes permissions que Consultant)
+        // 6. Rôle Directeur
         $roleDirecteur = Role::updateOrCreate(
             ['name' => 'Directeur', 'guard_name' => 'web'],
             ['guard_name' => 'web']
@@ -95,5 +111,29 @@ class RolesAndPermissionsSeeder extends Seeder
             'filter-sort-parcels',
             'view-structure',
         ]);
+
+        // Migration des associations utilisateurs (optionnel mais recommandé)
+        $this->migrateUserRoles();
+    }
+
+    protected function migrateUserRoles(): void
+    {
+        $roleMappings = [
+            'Superviseur_administratif' => 'chef_service',
+            'Administrateur' => 'dsi',
+            'Chef_Administratif' => 'chef_division',
+            // secretaire_executif et Consultant restent inchangés
+        ];
+
+        foreach ($roleMappings as $oldRole => $newRole) {
+            $users = User::whereHas('roles', function($query) use ($oldRole) {
+                $query->where('name', $oldRole);
+            })->get();
+
+            foreach ($users as $user) {
+                $user->assignRole($newRole);
+                $user->removeRole($oldRole);
+            }
+        }
     }
 }
