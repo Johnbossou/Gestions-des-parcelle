@@ -20,11 +20,11 @@ class ValidationLog extends Model
      * @var array
      */
     protected $fillable = [
-        'parcelle_id',  // Nouveau champ - ID de la parcelle concernée
-        'action',       // Type d'action (ex: 'parcelle_update')
-        'user_id',      // ID du superviseur qui a fait l'action
-        'director_id',  // ID du directeur qui a validé
-        'ip_address',   // Adresse IP de l'utilisateur
+        'parcelle_id',
+        'action',
+        'user_id',
+        'director_id',
+        'ip_address',
     ];
 
     /**
@@ -54,7 +54,7 @@ class ValidationLog extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Utilisateur::class, 'user_id');
     }
 
     /**
@@ -64,7 +64,7 @@ class ValidationLog extends Model
      */
     public function director(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'director_id');
+        return $this->belongsTo(Utilisateur::class, 'director_id');
     }
 
     /**

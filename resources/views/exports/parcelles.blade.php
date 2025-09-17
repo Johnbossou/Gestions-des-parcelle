@@ -78,7 +78,7 @@
         .header h1 {
             font-size: 14pt;
             color: var(--primary-color);
-            margin: 0 0 3pt 0;
+            margin: 0 0 30px 0;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.5pt;
@@ -247,6 +247,11 @@
         .col-responsable { width: 40px; }
         .col-updatedby { width: 45px; }
         .col-createdby { width: 45px; }
+        /* NOUVELLES COLONNES */
+        .col-details-occupation { width: 60px; }
+        .col-ref-autorisation { width: 50px; }
+        .col-date-autorisation { width: 45px; }
+        .col-date-expiration { width: 45px; }
 
         /* Pied de page */
         .footer {
@@ -275,7 +280,7 @@
         }
 
         @page :first {
-            margin-top: 15mm;
+             margin-top: 15mm;
         }
 
         /* Sauts de page */
@@ -356,8 +361,9 @@
                     @if (!empty($filters['arrondissement']))
                         <p><span class="filter-label">Arrondissement :</span> {{ $filters['arrondissement'] }}</p>
                     @endif
-                    @if (!empty($filters['type_terrain']))
-                        <p><span class="filter-label">Type de Terrain :</span> {{ $filters['type_terrain'] }}</p>
+                    <!-- CORRIGÉ: type_terrain → type_occupation -->
+                    @if (!empty($filters['type_occupation']))
+                        <p><span class="filter-label">Type d'Occupation :</span> {{ $filters['type_occupation'] }}</p>
                     @endif
                     @if (!empty($filters['statut_attribution']))
                         <p><span class="filter-label">Statut :</span> <span class="status-badge status-{{ $filters['statut_attribution'] }}">{{ ucfirst($filters['statut_attribution']) }}</span></p>
@@ -421,14 +427,19 @@
                         <th class="col-arrondissement">Arrond.</th>
                         <th class="col-secteur">Sect.</th>
                         <th class="col-lot">Lot</th>
-                        <th class="col-designation">Désignation</th>
+                        <th class="col-designation">Adressage</th>
                         <th class="col-parcelle">Parcelle</th>
                         <th class="col-superficie">Anc. Sup.</th>
                         <th class="col-superficie">Nouv. Sup.</th>
                         <th class="col-ecart">Écart</th>
                         <th class="col-motif">Motif</th>
                         <th class="col-observations">Observ.</th>
-                        <th class="col-type">Type</th>
+                        <!-- CORRIGÉ: Type Terrain → Type Occupation + nouveaux champs -->
+                        <th class="col-type">Type Occup.</th>
+                        <th class="col-details-occupation">Dét. Occup.</th>
+                        <th class="col-ref-autorisation">Ref. Aut.</th>
+                        <th class="col-date-autorisation">Date Aut.</th>
+                        <th class="col-date-expiration">Date Exp.</th>
                         <th class="col-statut">Statut</th>
                         <th class="col-litige">Litige</th>
                         <th class="col-details-litige">Dét. Litige</th>
@@ -436,7 +447,7 @@
                         <th class="col-date">Mise à jour</th>
                         <th class="col-coords">Latitude</th>
                         <th class="col-coords">Longitude</th>
-                        <th class="col-agent">Agent</th>
+                        <th class="col-agent">Agent ID</th>
                         <th class="col-responsable">Resp. ID</th>
                         <th class="col-updatedby">Modifié par</th>
                         <th class="col-createdby">Créé par</th>
@@ -454,7 +465,7 @@
                                 $arrondissementCount = $parcelles->where('arrondissement', $currentArrondissement)->count();
                             @endphp
                             <tr class="group-header">
-                                <td colspan="24">
+                                <td colspan="29">
                                     Arrondissement: {{ $currentArrondissement ?? 'Non spécifié' }}
                                     ({{ $arrondissementCount }} parcelle{{ $arrondissementCount > 1 ? 's' : '' }})
                                 </td>
@@ -476,7 +487,12 @@
                             </td>
                             <td class="col-motif truncated" title="{{ $parcelle->motif ?? '' }}">{{ $parcelle->motif ? (strlen($parcelle->motif) > 15 ? substr($parcelle->motif, 0, 15) . '...' : $parcelle->motif) : 'N/A' }}</td>
                             <td class="col-observations truncated" title="{{ $parcelle->observations ?? '' }}">{{ $parcelle->observations ? (strlen($parcelle->observations) > 20 ? substr($parcelle->observations, 0, 20) . '...' : $parcelle->observations) : 'N/A' }}</td>
-                            <td class="col-type">{{ $parcelle->type_terrain ?? 'N/A' }}</td>
+                            <!-- NOUVEAUX CHAMPS (remplacement de type_terrain) -->
+                            <td class="col-type">{{ $parcelle->type_occupation ?? 'N/A' }}</td>
+                            <td class="col-details-occupation truncated" title="{{ $parcelle->details_occupation ?? '' }}">{{ $parcelle->details_occupation ? (strlen($parcelle->details_occupation) > 15 ? substr($parcelle->details_occupation, 0, 15) . '...' : $parcelle->details_occupation) : 'N/A' }}</td>
+                            <td class="col-ref-autorisation">{{ $parcelle->reference_autorisation ?? 'N/A' }}</td>
+                            <td class="col-date-autorisation">{{ $parcelle->date_autorisation ? \Carbon\Carbon::parse($parcelle->date_autorisation)->format('d/m/Y') : 'N/A' }}</td>
+                            <td class="col-date-expiration">{{ $parcelle->date_expiration_autorisation ? \Carbon\Carbon::parse($parcelle->date_expiration_autorisation)->format('d/m/Y') : 'N/A' }}</td>
                             <td class="col-statut">
                                 @if($parcelle->statut_attribution)
                                     <span class="status-badge status-{{ $parcelle->statut_attribution }}">
@@ -491,10 +507,10 @@
                             </td>
                             <td class="col-details-litige truncated" title="{{ $parcelle->details_litige ?? '' }}">{{ $parcelle->details_litige ? (strlen($parcelle->details_litige) > 15 ? substr($parcelle->details_litige, 0, 15) . '...' : $parcelle->details_litige) : 'N/A' }}</td>
                             <td class="col-structure truncated" title="{{ $parcelle->structure ?? '' }}">{{ $parcelle->structure ? (strlen($parcelle->structure) > 15 ? substr($parcelle->structure, 0, 15) . '...' : $parcelle->structure) : 'N/A' }}</td>
-                            <td class="col-date">{{ $parcelle->date_mise_a_jour ? \Carbon\Carbon::parse($parcelle->date_mise_a_jour)->format('d/m/Y') : 'N/A' }}</td>
+                            <td class="col-date">{{ $parcelle->updated_at ? \Carbon\Carbon::parse($parcelle->updated_at)->format('d/m/Y') : 'N/A' }}</td>
                             <td class="col-coords">{{ $parcelle->latitude ? number_format($parcelle->latitude, 6) : 'N/A' }}</td>
                             <td class="col-coords">{{ $parcelle->longitude ? number_format($parcelle->longitude, 6) : 'N/A' }}</td>
-                            <td class="col-agent truncated" title="{{ $parcelle->agent ?? '' }}">{{ $parcelle->agent ? (strlen($parcelle->agent) > 15 ? substr($parcelle->agent, 0, 15) . '...' : $parcelle->agent) : 'N/A' }}</td>
+                            <td class="col-agent">{{ $parcelle->agent_id ?? 'N/A' }}</td>
                             <td class="col-responsable">{{ $parcelle->responsable_id ?? 'N/A' }}</td>
                             <td class="col-updatedby">{{ $parcelle->updated_by ?? 'N/A' }}</td>
                             <td class="col-createdby">{{ $parcelle->created_by ?? 'N/A' }}</td>
@@ -503,7 +519,7 @@
                         <!-- Indicateur de continuation pour les longs tableaux -->
                         @if (($index + 1) % 25 == 0)
                             <tr>
-                                <td colspan="24" class="continued">Suite du tableau à la page suivante...</td>
+                                <td colspan="29" class="continued">Suite du tableau à la page suivante...</td>
                             </tr>
                         @endif
                     @endforeach

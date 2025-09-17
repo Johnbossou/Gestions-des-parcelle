@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Models\Utilisateur; // Modifié: User -> Utilisateur
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +19,8 @@ class UserController extends Controller
 
     public function index()
     {
-        $users = User::with('roles')->paginate(10);
+        // Modifié: User -> Utilisateur
+        $users = Utilisateur::with('roles')->paginate(10);
         return view('users.index', compact('users'));
     }
 
@@ -31,25 +32,29 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        // Modifié: unique:users,email -> unique:utilisateurs,email
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'email' => 'required|email|unique:utilisateurs,email',
             'password' => 'required|string|min:8|confirmed',
             'role' => 'required|exists:roles,name',
         ]);
 
-        $user = User::create([
+        // Modifié: User -> Utilisateur
+        $user = Utilisateur::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => bcrypt($validated['password']),
+            'password' => Hash::make($validated['password']), // Modifié: bcrypt -> Hash::make
+            'email_verified_at' => now(), // Ajout de la vérification d'email
         ]);
 
         $user->assignRole($validated['role']);
 
+        // Modifié: 'model_type' => 'User' -> 'model_type' => Utilisateur::class
         AuditLog::create([
             'user_id' => Auth::id(),
             'action' => 'create',
-            'model_type' => 'User',
+            'model_type' => Utilisateur::class,
             'model_id' => $user->id,
             'changes' => json_encode($validated),
         ]);
@@ -58,22 +63,23 @@ class UserController extends Controller
             ->with('success', 'Utilisateur créé avec succès');
     }
 
-    public function show(User $user)
+    public function show(Utilisateur $user) // Modifié: User -> Utilisateur
     {
         return view('users.show', compact('user'));
     }
 
-    public function edit(User $user)
+    public function edit(Utilisateur $user) // Modifié: User -> Utilisateur
     {
         $roles = Role::all()->pluck('name');
         return view('users.edit', compact('user', 'roles'));
     }
 
-    public function update(Request $request, User $user)
+    public function update(Request $request, Utilisateur $user) // Modifié: User -> Utilisateur
     {
+        // Modifié: unique:users,email -> unique:utilisateurs,email
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'email' => 'required|email|unique:utilisateurs,email,' . $user->id,
             'password' => 'nullable|string|min:8|confirmed',
             'role' => 'required|exists:roles,name',
         ]);
@@ -86,16 +92,17 @@ class UserController extends Controller
         ];
 
         if (!empty($validated['password'])) {
-            $updateData['password'] = bcrypt($validated['password']);
+            $updateData['password'] = Hash::make($validated['password']); // Modifié: bcrypt -> Hash::make
         }
 
         $user->update($updateData);
         $user->syncRoles($validated['role']);
 
+        // Modifié: 'model_type' => 'User' -> 'model_type' => Utilisateur::class
         AuditLog::create([
             'user_id' => Auth::id(),
             'action' => 'update',
-            'model_type' => 'User',
+            'model_type' => Utilisateur::class,
             'model_id' => $user->id,
             'changes' => json_encode([
                 'old' => $oldData,
@@ -107,15 +114,20 @@ class UserController extends Controller
             ->with('success', 'Utilisateur mis à jour avec succès');
     }
 
-    public function destroy(User $user)
+    public function destroy(Utilisateur $user) // Modifié: User -> Utilisateur
     {
         $oldData = $user->toArray();
+
+        // Ajout: Détacher les rôles avant suppression (bonne pratique avec Spatie)
+        $user->roles()->detach();
+
         $user->delete();
 
+        // Modifié: 'model_type' => 'User' -> 'model_type' => Utilisateur::class
         AuditLog::create([
             'user_id' => Auth::id(),
             'action' => 'delete',
-            'model_type' => 'User',
+            'model_type' => Utilisateur::class,
             'model_id' => $user->id,
             'changes' => json_encode(['old' => $oldData]),
         ]);
@@ -147,10 +159,11 @@ class UserController extends Controller
 
         Auth::user()->update(['password' => Hash::make($request->password)]);
 
+        // Modifié: 'model_type' => 'User' -> 'model_type' => Utilisateur::class
         AuditLog::create([
             'user_id' => Auth::id(),
             'action' => 'update',
-            'model_type' => 'User',
+            'model_type' => Utilisateur::class,
             'model_id' => Auth::id(),
             'changes' => json_encode(['password' => 'changed']),
         ]);

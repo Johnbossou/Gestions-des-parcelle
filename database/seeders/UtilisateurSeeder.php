@@ -1,7 +1,7 @@
 <?php
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Models\Utilisateur;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -11,50 +11,56 @@ class UtilisateurSeeder extends Seeder
 {
     public function run(): void
     {
+        // S'assurer que les rôles et permissions existent
+        $this->call(RolesAndPermissionsSeeder::class);
+
         $users = [
             [
                 'name' => 'Jean Dupont',
                 'email' => 'jean.dupont@mairie.bj',
-                'password' => Hash::make('password123'),
-                'role' => 'Superviseur_administratif', // Ancien: chef_service
+                'password' => Hash::make('azerty12àA'),
             ],
             [
                 'name' => 'Marie Koffi',
                 'email' => 'marie.koffi@mairie.bj',
                 'password' => Hash::make('password123'),
-                'role' => 'Consultant', // Ancien: secretaire_executif
             ],
             [
                 'name' => 'Paul Ahomadegbe',
                 'email' => 'paul.dsi@mairie.bj',
                 'password' => Hash::make('password123'),
-                'role' => 'Administrateur', // Ancien: dsi
             ],
             [
                 'name' => 'Aline Sossou',
                 'email' => 'aline.sossou@mairie.bj',
                 'password' => Hash::make('password123'),
-                'role' => 'Superviseur_administratif', // Ancien: chef_service
             ],
             [
                 'name' => 'Sophie Gbedji',
                 'email' => 'sophie.gbedji@mairie.bj',
                 'password' => Hash::make('password123'),
-                'role' => 'Chef_Administratif', // Ancien: chef_division
             ],
             [
-                'name' => 'Koffi Mensah', // Nouvel utilisateur Directeur
+                'name' => 'Koffi Mensah',
                 'email' => 'koffi.mensah@mairie.bj',
-                'password' => Hash::make('DirectorPass123!'), // Mot de passe plus robuste pour le Directeur
-                'role' => 'Directeur',
+                'password' => Hash::make('DirectorPass123!'),
             ],
         ];
 
+        $roles = [
+            'jean.dupont@mairie.bj' => 'chef_service',
+            'marie.koffi@mairie.bj' => 'Consultant',
+            'paul.dsi@mairie.bj' => 'dsi',
+            'aline.sossou@mairie.bj' => 'chef_service',
+            'sophie.gbedji@mairie.bj' => 'chef_division',
+            'koffi.mensah@mairie.bj' => 'Directeur',
+        ];
+
         foreach ($users as $userData) {
-            $user = User::where('email', $userData['email'])->first();
+            $user = Utilisateur::where('email', $userData['email'])->first();
 
             if (!$user) {
-                $user = User::create([
+                $user = Utilisateur::create([
                     'name' => $userData['name'],
                     'email' => $userData['email'],
                     'password' => $userData['password'],
@@ -63,11 +69,10 @@ class UtilisateurSeeder extends Seeder
                 ]);
             }
 
-            $role = Role::firstOrCreate(
-                ['name' => $userData['role'], 'guard_name' => 'web']
-            );
-
-            if (!$user->hasRole($role->name)) {
+            // Assigner le rôle correspondant
+            $roleName = $roles[$userData['email']];
+            $role = Role::where('name', $roleName)->where('guard_name', 'web')->first();
+            if ($role && !$user->hasRole($role->name)) {
                 $user->assignRole($role);
             }
         }

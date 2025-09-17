@@ -1,43 +1,48 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Parcelle;
+use App\Imports\ParcellesImport;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use App\Models\AuditLog;
 use App\Models\ValidationLog;
 use Illuminate\Support\Facades\DB;
-use App\Models\User;
+use App\Models\Utilisateur;
 use App\Http\Exports\ParcellesExport;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+use App\Enums\TypeOccupation;
 
 class ParcelleController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth:sanctum')->except(['index', 'create', 'show', 'edit', 'editCoordinates']);
+        $this->middleware('auth');
         $this->middleware('require.director.approval')->only(['update']);
         $this->middleware('permission:view-parcels')->only(['index', 'show', 'filter']);
-        $this->middleware('require.director.approval')->only(['update']);
         $this->middleware('permission:create-parcelles')->only(['create', 'store']);
         $this->middleware('permission:edit-parcelles')->only(['edit', 'update']);
         $this->middleware('permission:delete-parcels')->only('destroy');
         $this->middleware('permission:edit-coordinates')->only(['editCoordinates', 'updateCoordinates']);
         $this->middleware('permission:manage-litiges')->only(['store', 'update']);
+        $this->middleware('permission:import-parcelles')->only(['importForm', 'import']);
     }
 
     public function index(Request $request)
     {
-        $query = Parcelle::query()->with(['agent', 'responsable']); // Chargement anticipé des relations
+        $query = Parcelle::query()->with(['agent', 'responsable']);
 
-        // Appliquer les filtres avec normalisation pour les champs textuels
+        // Appliquer les filtres
         if ($request->filled('arrondissement')) {
             $query->whereRaw('LOWER(arrondissement) = ?', [strtolower($request->arrondissement)]);
         }
-        if ($request->filled('type_terrain')) {
-            $query->where('type_terrain', $request->type_terrain);
+        if ($request->filled('type_occupation')) {
+            $query->where('type_occupation', $request->type_occupation);
         }
         if ($request->filled('statut_attribution')) {
             $query->where('statut_attribution', $request->statut_attribution);
@@ -55,34 +60,91 @@ class ParcelleController extends Controller
             $query->where('ancienne_superficie', '<=', $request->ancienne_superficie_max);
         }
 
-        // Tri par défaut sur updated_at pour prioriser les parcelles récemment modifiées
         $query->orderBy('updated_at', 'desc');
-
         $parcelles = $query->paginate(10)->appends($request->query());
 
+        // Calcul des statistiques
         $stats = [
             'total' => Parcelle::count(),
             'arrondissements' => Parcelle::distinct('arrondissement')->count(),
             'attribuees' => Parcelle::where('statut_attribution', 'attribué')->count(),
             'litiges' => Parcelle::where('litige', true)->count(),
-            'residentiel' => Parcelle::where('type_terrain', 'Résidentiel')->count(),
-            'commercial' => Parcelle::where('type_terrain', 'Commercial')->count(),
-            'agricole' => Parcelle::where('type_terrain', 'Agricole')->count(),
-            'institutionnel' => Parcelle::where('type_terrain', 'Institutionnel')->count(),
+            'autorise' => Parcelle::where('type_occupation', TypeOccupation::AUTORISE)->count(),
+            'anarchique' => Parcelle::where('type_occupation', TypeOccupation::ANARCHIQUE)->count(),
+            'libre' => Parcelle::where('type_occupation', TypeOccupation::LIBRE)->count(),
         ];
 
+        // AJOUT: Données de répartition par arrondissement
+        $stats['arrondissements_data'] = Parcelle::select('arrondissement', DB::raw('count(*) as count'))
+            ->groupBy('arrondissement')
+            ->pluck('count', 'arrondissement')
+            ->toArray();
+
+        // Évolutions mensuelles
+        $stats['evolution_mois'] = [
+            'total' => $this->calculateEvolution('total'),
+            'litiges' => $this->calculateEvolution('litige', true),
+            'attribuees' => $this->calculateEvolution('statut_attribution', 'attribué'),
+            'autorise' => $this->calculateEvolution('type_occupation', TypeOccupation::AUTORISE->value),
+            'anarchique' => $this->calculateEvolution('type_occupation', TypeOccupation::ANARCHIQUE->value),
+            'libre' => $this->calculateEvolution('type_occupation', TypeOccupation::LIBRE->value),
+        ];
+
+        // Données pour la carte interactive - VERSION COMPLÈTE pour correspondre à la vue
+        $coordonnees = Parcelle::whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->select('id', 'numero', 'parcelle', 'latitude', 'longitude',
+                    'arrondissement', 'statut_attribution', 'type_occupation',
+                    'nouvelle_superficie', 'ancienne_superficie', 'litige', 'structure')
+            ->get();
+
         $arrondissements = Parcelle::select('arrondissement')->distinct()->orderBy('arrondissement')->pluck('arrondissement')->toArray();
-        $types_terrain = ['Résidentiel', 'Commercial', 'Agricole', 'Institutionnel', 'Autre'];
+        $types_occupation = TypeOccupation::values();
         $statuts = ['attribué', 'non attribué'];
 
-        return view('parcelles.index', compact('parcelles', 'stats', 'arrondissements', 'types_terrain', 'statuts'));
+        return view('parcelles.index', compact('parcelles', 'stats', 'arrondissements', 'types_occupation', 'statuts', 'coordonnees'));
+    }
+
+    private function calculateEvolution($field, $value = null)
+    {
+        $maintenant = now();
+        $moisDernier = now()->subMonth();
+
+        if ($value === true) {
+            $countMaintenant = Parcelle::where('litige', true)
+                ->whereMonth('created_at', $maintenant->month)
+                ->whereYear('created_at', $maintenant->year)
+                ->count();
+            $countMoisDernier = Parcelle::where('litige', true)
+                ->whereMonth('created_at', $moisDernier->month)
+                ->whereYear('created_at', $moisDernier->year)
+                ->count();
+        } elseif ($value) {
+            $countMaintenant = Parcelle::where($field, $value)
+                ->whereMonth('created_at', $maintenant->month)
+                ->whereYear('created_at', $maintenant->year)
+                ->count();
+            $countMoisDernier = Parcelle::where($field, $value)
+                ->whereMonth('created_at', $moisDernier->month)
+                ->whereYear('created_at', $moisDernier->year)
+                ->count();
+        } else {
+            $countMaintenant = Parcelle::whereMonth('created_at', $maintenant->month)
+                ->whereYear('created_at', $maintenant->year)
+                ->count();
+            $countMoisDernier = Parcelle::whereMonth('created_at', $moisDernier->month)
+                ->whereYear('created_at', $moisDernier->year)
+                ->count();
+        }
+
+        return $countMoisDernier == 0 ? 0 : round((($countMaintenant - $countMoisDernier) / $countMoisDernier) * 100, 1);
     }
 
     public function create()
     {
-        // Récupère tous les utilisateurs pour remplir les listes déroulantes Agent et Responsable
-        $users = User::all();
-        return view('parcelles.create', compact('users'));
+        $users = Utilisateur::all();
+        $types_occupation = TypeOccupation::values();
+        return view('parcelles.create', compact('users', 'types_occupation'));
     }
 
     public function store(Request $request)
@@ -97,61 +159,46 @@ class ParcelleController extends Controller
             'nouvelle_superficie' => 'nullable|numeric',
             'motif' => 'nullable|string',
             'observations' => 'nullable|string',
-            'type_terrain' => 'required|in:Résidentiel,Commercial,Agricole,Institutionnel,Autre',
+            'type_occupation' => 'required|in:' . implode(',', TypeOccupation::values()),
+            'details_occupation' => 'nullable|string',
+            'reference_autorisation' => 'nullable|string|max:100',
+            'date_autorisation' => 'nullable|date',
+            'date_expiration_autorisation' => 'nullable|date|after_or_equal:date_autorisation',
             'statut_attribution' => 'required|in:attribué,non attribué',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'litige' => 'required|boolean',
             'details_litige' => 'nullable|string',
             'structure' => 'nullable|string',
-            'agent_id' => 'nullable|exists:users,id',
-            'agent_name' => 'nullable|string|required_if:agent_id,custom',
-            'responsable_id' => 'nullable|exists:users,id',
-            'responsable_name' => 'nullable|string|required_if:responsable_id,custom',
+            'agent_id' => 'nullable',
+            'agent_name' => 'nullable|string|max:255',
+            'responsable_id' => 'nullable',
+            'responsable_name' => 'nullable|string|max:255',
         ]);
 
-        // Générer un numéro unique
-        do {
-            $numero = rand(1000, 9999);
-        } while (Parcelle::where('numero', $numero)->exists());
+        // Gestion Agent “Autre…”
+        if ($request->agent_id === 'custom' && $request->filled('agent_name')) {
+            $agent = Utilisateur::create(['name' => $request->agent_name]);
+            $data['agent_id'] = $agent->id;
+        } else {
+            $data['agent_id'] = $request->agent_id ?: null;
+        }
 
-        $data['numero'] = $numero;
+        // Gestion Responsable “Autre…”
+        if ($request->responsable_id === 'custom' && $request->filled('responsable_name')) {
+            $responsable = Utilisateur::create(['name' => $request->responsable_name]);
+            $data['responsable_id'] = $responsable->id;
+        } else {
+            $data['responsable_id'] = $request->responsable_id ?: null;
+        }
+
+        // Générer numéro unique
+        do {
+            $data['numero'] = rand(1000, 9999);
+        } while (Parcelle::where('numero', $data['numero'])->exists());
+
         $data['created_by'] = Auth::id();
         $data['updated_by'] = Auth::id();
-
-        // Gérer agent_id/agent_name
-        if ($request->filled('agent_name') && $request->agent_id === 'custom') {
-            // Créer un nouvel utilisateur pour l'agent
-            $agent = User::create([
-                'name' => $request->agent_name,
-                'email' => 'agent_' . strtolower(str_replace(' ', '_', $request->agent_name)) . '_' . time() . '@example.com',
-                'password' => Hash::make('temporary_password'),
-            ]);
-            $agent->assignRole('agent'); // Assumer l'utilisation de Spatie Laravel Permission
-            $data['agent_id'] = $agent->id;
-        } elseif ($request->filled('agent_id') && $request->agent_id !== 'custom') {
-            $data['agent_id'] = $request->agent_id;
-        } else {
-            $data['agent_id'] = null;
-        }
-        unset($data['agent_name']);
-
-        // Gérer responsable_id/responsable_name
-        if ($request->filled('responsable_name') && $request->responsable_id === 'custom') {
-            // Créer un nouvel utilisateur pour le responsable
-            $responsable = User::create([
-                'name' => $request->responsable_name,
-                'email' => 'responsable_' . strtolower(str_replace(' ', '_', $request->responsable_name)) . '_' . time() . '@example.com',
-                'password' => Hash::make('temporary_password'),
-            ]);
-            $responsable->assignRole('responsable'); // Assumer l'utilisation de Spatie Laravel Permission
-            $data['responsable_id'] = $responsable->id;
-        } elseif ($request->filled('responsable_id') && $request->responsable_id !== 'custom') {
-            $data['responsable_id'] = $request->responsable_id;
-        } else {
-            $data['responsable_id'] = null;
-        }
-        unset($data['responsable_name']);
 
         $parcelle = Parcelle::create($data);
 
@@ -168,31 +215,22 @@ class ParcelleController extends Controller
             : redirect()->route('dashboard')->with('success', 'Parcelle créée avec succès.');
     }
 
+
     public function show(Parcelle $parcelle)
     {
-        // Charge toutes les relations nécessaires en une seule requête
-        $parcelle->load([
-            'agent',
-            'responsable',
-            'createdBy',
-            'updatedBy',
-            'validationLogs' => function($query) {
-                $query->latest()->with('director');
-            }
-        ]);
-
+        $parcelle->load(['agent', 'responsable', 'createdBy', 'updatedBy', 'validationLogs' => fn($q) => $q->latest()->with('director')]);
         return view('parcelles.show', compact('parcelle'));
     }
 
     public function edit(Parcelle $parcelle)
     {
-        $users = User::all(); // Ajouter les utilisateurs pour les listes déroulantes
-        return view('parcelles.edit', compact('parcelle', 'users'));
+        $users = Utilisateur::all();
+        $types_occupation = TypeOccupation::values();
+        return view('parcelles.edit', compact('parcelle', 'users', 'types_occupation'));
     }
 
     public function update(Request $request, Parcelle $parcelle)
     {
-        // Validation des données
         $data = $request->validate([
             'numero' => 'required|numeric|unique:parcelles,numero,' . $parcelle->id,
             'arrondissement' => 'required|string',
@@ -204,64 +242,47 @@ class ParcelleController extends Controller
             'nouvelle_superficie' => 'nullable|numeric',
             'motif' => 'nullable|string',
             'observations' => 'nullable|string',
-            'type_terrain' => 'required|in:Résidentiel,Commercial,Agricole,Institutionnel,Autre',
+            'type_occupation' => 'required|in:' . implode(',', TypeOccupation::values()),
+            'details_occupation' => 'nullable|string',
+            'reference_autorisation' => 'nullable|string|max:100',
+            'date_autorisation' => 'nullable|date',
+            'date_expiration_autorisation' => 'nullable|date|after_or_equal:date_autorisation',
             'statut_attribution' => 'required|in:attribué,non attribué',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'litige' => 'required|boolean',
             'details_litige' => 'nullable|string',
             'structure' => 'nullable|string',
-            'agent_id' => 'nullable|exists:users,id',
-            'agent_name' => 'nullable|string|required_if:agent_id,custom',
-            'responsable_id' => 'nullable|exists:users,id',
-            'responsable_name' => 'nullable|string|required_if:responsable_id,custom',
+            'agent_id' => 'nullable',
+            'agent_name' => 'nullable|string|max:255',
+            'responsable_id' => 'nullable',
+            'responsable_name' => 'nullable|string|max:255',
         ]);
 
-        // Vérification supplémentaire pour les superviseurs (ancien: Superviseur_administratif)
-        if (Auth::user()->hasRole('chef_service')) {
-            $request->validate([
-                'director_password' => 'required|string'
-            ]);
+        // Gestion Agent “Autre…”
+        if ($request->agent_id === 'custom' && $request->filled('agent_name')) {
+            $agent = Utilisateur::create(['name' => $request->agent_name]);
+            $data['agent_id'] = $agent->id;
+        } else {
+            $data['agent_id'] = $request->agent_id ?: null;
+        }
 
-            $director = User::role('Directeur')->first();
+        // Gestion Responsable “Autre…”
+        if ($request->responsable_id === 'custom' && $request->filled('responsable_name')) {
+            $responsable = Utilisateur::create(['name' => $request->responsable_name]);
+            $data['responsable_id'] = $responsable->id;
+        } else {
+            $data['responsable_id'] = $request->responsable_id ?: null;
+        }
+
+        if (Auth::user()->hasRole('chef_service')) {
+            $request->validate(['director_password' => 'required|string']);
+
+            $director = Utilisateur::role('Directeur')->first();
             if (!$director || !Hash::check($request->director_password, $director->password)) {
-                return back()
-                    ->withErrors(['director_password' => 'Mot de passe du Directeur incorrect'])
-                    ->withInput();
+                return back()->withErrors(['director_password' => 'Mot de passe du Directeur incorrect'])->withInput();
             }
         }
-
-        // Gérer agent_id/agent_name
-        if ($request->filled('agent_name') && $request->agent_id === 'custom') {
-            $agent = User::create([
-                'name' => $request->agent_name,
-                'email' => 'agent_' . strtolower(str_replace(' ', '_', $request->agent_name)) . '_' . time() . '@example.com',
-                'password' => Hash::make('temporary_password'),
-            ]);
-            $agent->assignRole('agent');
-            $data['agent_id'] = $agent->id;
-        } elseif ($request->filled('agent_id') && $request->agent_id !== 'custom') {
-            $data['agent_id'] = $request->agent_id;
-        } else {
-            $data['agent_id'] = null;
-        }
-        unset($data['agent_name']);
-
-        // Gérer responsable_id/responsable_name
-        if ($request->filled('responsable_name') && $request->responsable_id === 'custom') {
-            $responsable = User::create([
-                'name' => $request->responsable_name,
-                'email' => 'responsable_' . strtolower(str_replace(' ', '_', $request->responsable_name)) . '_' . time() . '@example.com',
-                'password' => Hash::make('temporary_password'),
-            ]);
-            $responsable->assignRole('responsable');
-            $data['responsable_id'] = $responsable->id;
-        } elseif ($request->filled('responsable_id') && $request->responsable_id !== 'custom') {
-            $data['responsable_id'] = $request->responsable_id;
-        } else {
-            $data['responsable_id'] = null;
-        }
-        unset($data['responsable_name']);
 
         $data['updated_by'] = Auth::id();
         $changes = array_diff_assoc($data, $parcelle->toArray());
@@ -269,7 +290,6 @@ class ParcelleController extends Controller
         if (!empty($changes)) {
             $parcelle->update($data);
 
-            // Journalisation standard
             AuditLog::create([
                 'user_id' => Auth::id(),
                 'action' => 'update',
@@ -278,7 +298,6 @@ class ParcelleController extends Controller
                 'changes' => json_encode($changes),
             ]);
 
-            // Journalisation spécifique pour les superviseurs (ancien: Superviseur_administratif)
             if (Auth::user()->hasRole('chef_service')) {
                 ValidationLog::create([
                     'parcelle_id' => $parcelle->id,
@@ -294,6 +313,7 @@ class ParcelleController extends Controller
             ? response()->json($parcelle)
             : redirect()->route('parcelles.index')->with('success', 'Parcelle modifiée avec succès.');
     }
+
 
     public function destroy(Parcelle $parcelle)
     {
@@ -325,8 +345,9 @@ class ParcelleController extends Controller
 
         $data['updated_by'] = Auth::id();
         $changes = array_diff_assoc($data, $parcelle->only(['latitude', 'longitude']));
-        $parcelle->update($data);
-        if ($changes) {
+
+        if (!empty($changes)) {
+            $parcelle->update($data);
             AuditLog::create([
                 'user_id' => Auth::id(),
                 'action' => 'update_coordinates',
@@ -344,11 +365,12 @@ class ParcelleController extends Controller
     public function filter(Request $request)
     {
         $query = Parcelle::query();
+
         if ($request->has('arrondissement') && $request->arrondissement) {
             $query->where('arrondissement', $request->arrondissement);
         }
-        if ($request->has('type_terrain') && $request->type_terrain) {
-            $query->where('type_terrain', $request->type_terrain);
+        if ($request->has('type_occupation') && $request->type_occupation) {
+            $query->where('type_occupation', $request->type_occupation);
         }
         if ($request->has('statut_attribution') && $request->statut_attribution) {
             $query->where('statut_attribution', $request->statut_attribution);
@@ -360,36 +382,63 @@ class ParcelleController extends Controller
             $query->where('structure', 'like', '%' . $request->structure . '%');
         }
         if ($request->has('sort_by')) {
-            $direction = $request->input('sort_direction', 'asc');
-            $query->orderBy($request->sort_by, $direction);
+            $query->orderBy($request->sort_by, $request->input('sort_direction', 'asc'));
         }
-        $parcelles = $query->paginate(10)->appends($request->query());
-        return response()->json($parcelles);
+
+        return response()->json($query->paginate(10)->appends($request->query()));
     }
 
     public function export(Request $request)
     {
         $filters = $request->only([
-            'arrondissement',
-            'type_terrain',
-            'statut_attribution',
-            'litige',
-            'structure',
-            'ancienne_superficie_min',
-            'ancienne_superficie_max'
+            'arrondissement', 'type_occupation', 'statut_attribution',
+            'litige', 'structure', 'ancienne_superficie_min', 'ancienne_superficie_max'
         ]);
+
+        // Convertir les valeurs d'énumération en string pour l'export
+        $filtersForExport = $filters;
+        if (isset($filtersForExport['type_occupation']) && $filtersForExport['type_occupation'] instanceof \App\Enums\TypeOccupation) {
+            $filtersForExport['type_occupation'] = $filtersForExport['type_occupation']->value;
+        }
+
         $format = $request->input('format', 'excel');
-        $export = new ParcellesExport($filters, $format);
+        $export = new ParcellesExport($filtersForExport, $format);
 
         if ($format === 'pdf') {
-            $parcelles = $export->collection();
             $pdf = Pdf::loadView('exports.parcelles', [
-                'parcelles' => $parcelles,
+                'parcelles' => $export->collection(),
                 'filters' => $filters
             ]);
             return $pdf->download('parcelles.pdf');
         }
 
         return Excel::download($export, 'parcelles.xlsx');
+    }
+
+    public function importForm()
+    {
+        return view('parcelles.import');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate(['file' => 'required|mimes:xlsx,csv|max:10240']);
+
+        try {
+            DB::beginTransaction();
+            Excel::import(new ParcellesImport, $request->file('file'));
+            DB::commit();
+            return redirect()->route('parcelles.index')->with('success', 'Importation réussie !');
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            DB::rollBack();
+            $errors = collect($e->failures())->map(fn($failure) =>
+                'Ligne ' . $failure->row() . ': ' . implode(', ', $failure->errors())
+            );
+            return redirect()->back()->withErrors($errors)->withInput();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erreur import parcelles: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur lors de l\'importation: ' . $e->getMessage());
+        }
     }
 }

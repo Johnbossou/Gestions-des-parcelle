@@ -3,14 +3,15 @@ namespace Database\Seeders;
 
 use App\Models\AuditLog;
 use App\Models\Parcelle;
-use App\Models\User;
+use App\Models\Utilisateur; // ← Modifier ici: User -> Utilisateur
 use Illuminate\Database\Seeder;
 
 class AuditLogSeeder extends Seeder
 {
     public function run(): void
     {
-        $users = User::pluck('id')->toArray();
+        // ← Modifier ici: User -> Utilisateur
+        $users = Utilisateur::pluck('id')->toArray();
         $parcelles = Parcelle::pluck('id')->toArray();
         $actions = ['create', 'update', 'delete'];
         $fields = ['nouvelle_superficie', 'litige', 'structure', 'type_terrain'];

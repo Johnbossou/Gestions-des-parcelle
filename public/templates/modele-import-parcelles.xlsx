@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Test d'importation Parcelles</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .test-case { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0069d9; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .file-link { display: inline-block; padding: 10px 15px; background: #28a745; color: white; text-decoration: none; border-radius: 4px; margin: 5px; }
+        .file-link:hover { background: #218838; }
+    </style>
+</head>
+<body>
+    <h1>Test complet d'importation de parcelles</h1>
+
+    <div class="test-case">
+        <h3>✅ Test 1: Fichier CSV valide (Nouveau format)</h3>
+        <p>Fichier avec les nouveaux champs d'occupation :</p>
+        <a class="file-link" href="data:text/csv;base64,cGFyY2VsbGUsYXJyb25kaXNzZW1lbnQsc2VjdGV1cixsb3QsdHlwZV9vY2N1cGF0aW9uLGRldGFpbHNfb2NjdXBhdGlvbixyZWZlcmVuY2VfYXV0b3Jpc2F0aW9uLGRhdGVfYXV0b3Jpc2F0aW9uLGRhdGVfZXhwaXJhdGlvbl9hdXRvcmlzYXRpb24sc3RhdHV0X2F0dHJpYnV0aW9uLGFnZW50X2lkCjAwMSxBcnJvbmQxMCxTZWN0ZXVyIEEsMSxBdXRvcmlzw6ksIkJwIHTDqWzDqWNvbSwgcsOpc2lkZW50aWVsIiwiQVVUTy0yMDI0LTAwMSIsIjIwMjQtMDEtMTUiLCIyMDI5LTAxLTE1IixhdHRyaWJ1w6ksMQowMDIsQXJyb25kMTAsU2VjdGV1ciBBLDIsQW5hcmNoaXF1ZSwiQ29uc3RydWN0aW9uIGlsbMOpZ2FsZSIsLCwsYXR0cmlidcOpLDI=" download="test_nouveau_format.csv">
+            Télécharger CSV nouveau format
+        </a>
+    </div>
+
+    <div class="test-case">
+        <h3>✅ Test 2: Fichier CSV valide (Ancien format rétrocompatible)</h3>
+        <p>Fichier avec l'ancien champ type_terrain pour tester la rétrocompatibilité :</p>
+        <a class="file-link" href="data:text/csv;base64,cGFyY2VsbGUsYXJyb25kaXNzZW1lbnQsc2VjdGV1cixsb3QsdHlwZV90ZXJyYWluLHN0YXR1dF9hdHRyaWJ1dGlvbixhZ2VudF9pZAowMDMsQXJyb25kMTAsU2VjdGV1ciBBLDMscsOpc2lkZW50aWVsLGF0dHJpYnXpLDMKMDAsQXJyb25kMTAsU2VjdGV1ciBBLDQsY29tbWVyY2lhbCxub24gYXR0cmlidcOpLDQ=" download="test_ancien_format.csv">
+            Télécharger CSV ancien format
+        </a>
+    </div>
+
+    <div class="test-case">
+        <h3>⚠️ Test 3: Fichier avec erreurs de validation</h3>
+        <p>Testez la gestion des erreurs avec ce fichier contenant des données invalides :</p>
+        <a class="file-link" href="data:text/csv;base64,cGFyY2VsbGUsYXJyb25kaXNzZW1lbnQsc2VjdGV1cixsb3QsdHlwZV9vY2N1cGF0aW9uLHN0YXR1dF9hdHRyaWJ1dGlvbgowMDUsLCwsSW52YWxpZGUsYXV0cmVjaG9zZQ==" download="test_erreurs.csv">
+            Télécharger CSV avec erreurs
+        </a>
+    </div>
+
+    <div class="test-case">
+        <h3>📋 Données de test pour Excel</h3>
+        <p>Créez un fichier Excel avec ces données :</p>
+        <pre>
+parcelle | arrondissement | secteur | lot | type_occupation | details_occupation | reference_autorisation | date_autorisation | date_expiration_autorisation | statut_attribution | agent_id
+001      | Arrond10       | Secteur A | 1  | Autorisé        | Bp télécom, résidentiel | AUTO-2024-001 | 2024-01-15 | 2029-01-15 | attribué | 1
+002      | Arrond10       | Secteur A | 2  | Anarchique      | Construction illégale | | | | attribué | 2
+003      | Arrond11       | Secteur B | 1  | Libre           | | | | | non attribué | 3
+        </pre>
+    </div>
+
+    <div class="test-case">
+        <h3>🔍 Tests à effectuer</h3>
+        <ol>
+            <li>Importation réussie avec fichier valide</li>
+            <li>Gestion des erreurs de validation</li>
+            <li>Rétrocompatibilité avec ancien format (type_terrain)</li>
+            <li>Gestion des relations (agent_id doit exister dans utilisateurs)</li>
+            <li>Vérification des logs d'audit</li>
+            <li>Test des permissions (utilisateur avec/without permission:import-parcelles)</li>
+        </ol>
+
+        <button onclick="window.open('/parcelles/import', '_blank')">Ouvrir la page d'importation</button>
+    </div>
+</body>
+</html>

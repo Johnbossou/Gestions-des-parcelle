@@ -152,37 +152,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Section des préférences (optionnelle) -->
-    <div class="preferences-section" data-aos="fade-up" data-aos-delay="400">
-        <h3>Préférences du Compte</h3>
-        <div class="preferences-grid">
-            <div class="preference-item">
-                <div class="preference-toggle">
-                    <label class="toggle-switch">
-                        <input type="checkbox" checked>
-                        <span class="slider"></span>
-                    </label>
-                    <div class="preference-info">
-                        <span class="preference-label">Notifications par email</span>
-                        <span class="preference-description">Recevoir les mises à jour importantes</span>
-                    </div>
-                </div>
-            </div>
-            <div class="preference-item">
-                <div class="preference-toggle">
-                    <label class="toggle-switch">
-                        <input type="checkbox" checked>
-                        <span class="slider"></span>
-                    </label>
-                    <div class="preference-info">
-                        <span class="preference-label">Mode sombre</span>
-                        <span class="preference-description">Interface adaptée à la luminosité</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <style>

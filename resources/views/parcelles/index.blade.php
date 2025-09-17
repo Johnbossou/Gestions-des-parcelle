@@ -3,6 +3,8 @@
 @section('content')
 
 <!-- Intégration des scripts -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
@@ -44,43 +46,73 @@
             </div>
             <div class="header-actions">
                 @can('create-parcelles')
-                <a href="{{ route('parcelles.create') }}" class="action-btn create-btn" aria-label="Créer une nouvelle parcelle">
-                    <span class="btn-icon">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16m8-8H4"/></svg>
-                    </span>
-                    <span class="btn-text">Nouvelle Parcelle</span>
-                    <span class="btn-glow"></span>
-                </a>
+                    <a href="{{ route('parcelles.create') }}" class="action-btn create-btn" aria-label="Créer une nouvelle parcelle">
+                        <span class="btn-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 4v16m8-8H4"/>
+                            </svg>
+                        </span>
+                        <span class="btn-text">Nouvelle Parcelle</span>
+                        <span class="btn-glow"></span>
+                    </a>
                 @endcan
+                @can('import-parcelles')
+                    <a href="{{ route('parcelles.import') }}" class="action-btn import-btn" aria-label="Importer un fichier Excel">
+                        <span class="btn-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 0015.9 6L16 6a5 5 0 011 9.9
+                                    M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                        </span>
+
+                        <span class="btn-text">Importer Excel</span>
+                        <span class="btn-glow"></span>
+                    </a>
+                @endcan
+
                 @can('export-parcels')
                 <div class="export-dropdown">
                     <button class="dropdown-toggle action-btn export-btn" aria-expanded="false" aria-label="Exporter les parcelles">
                         <span class="btn-icon">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17"/></svg>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17"/>
+                            </svg>
                         </span>
                         <span class="btn-text">Exporter</span>
                         <span class="btn-glow"></span>
-                        <svg class="chevron" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg>
+                        <svg class="chevron" viewBox="0 0 24 24">
+                            <path d="M7 10l5 5 5-5"/>
+                        </svg>
                     </button>
 
                     <form action="{{ route('parcelles.export') }}" method="GET" class="dropdown-menu" id="export-form">
                         <input type="hidden" name="arrondissement" value="{{ request('arrondissement') }}">
-                        <input type="hidden" name="type_terrain" value="{{ request('type_terrain') }}">
+                        <input type="hidden" name="type_occupation" value="{{ request('type_occupation') }}">
                         <input type="hidden" name="statut_attribution" value="{{ request('statut_attribution') }}">
                         <input type="hidden" name="litige" value="{{ request('litige') }}">
                         <input type="hidden" name="structure" value="{{ request('structure') }}">
                         <input type="hidden" name="ancienne_superficie_min" value="{{ request('ancienne_superficie_min') }}">
                         <input type="hidden" name="ancienne_superficie_max" value="{{ request('ancienne_superficie_max') }}">
 
-                        <button type="submit" name="format" value="excel" class="dropdown-item">
-                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6m-8 10v-4m-2 2h4m-8-2h2v4H8v-4z"/></svg>
-                            Excel
+                        <button type="submit" name="format" value="excel" class="dropdown-item flex items-center gap-2 px-4 py-2 rounded-md hover:bg-green-100 text-green-700 font-medium transition">
+                            <svg viewBox="0 0 24 24" width="18" height="18" class="text-green-600">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                                <path d="M14 2v6h6m-8 10v-4m-2 2h4m-8-2h2v4H8v-4z"/>
+                            </svg>
+                            Exporter en Excel
                         </button>
 
+
                         <button type="submit" name="format" value="pdf" class="dropdown-item">
-                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6M8 12h1m3 0h1m2-2H8v4h7v-2m0 0h1"/></svg>
+                            <svg viewBox="0 0 24 24" width="16" height="16">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                                <path d="M14 2v6h6M8 12h1m3 0h1m2-2H8v4h7v-2m0 0h1"/>
+                            </svg>
                             PDF
                         </button>
+
                     </form>
                 </div>
                 @endcan
@@ -98,7 +130,9 @@
                     <div class="card-header">
                         <h3>Total des Parcelles</h3>
                         <div class="card-icon">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l2-2h14l2 2M3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6M3 6l2 2h14l2-2"/></svg>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M3 6l2-2h14l2 2M3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6M3 6l2-2h14l2-2"/>
+                            </svg>
                         </div>
                     </div>
                     <div class="card-content">
@@ -114,9 +148,11 @@
                     <div class="mini-chart-container">
                         <canvas id="totalParcellesChart" width="100" height="60"></canvas>
                     </div>
-                    <div class="card-trend">
-                        <svg viewBox="0 0 24 24"><path d="M23 6l-9.5 9.5-5-5L1 18"/></svg>
-                        <span>+5% ce mois-ci</span>
+                    <div class="card-trend {{ $stats['evolution_mois']['total'] >= 0 ? '' : 'down' }}">
+                        <svg viewBox="0 0 24 24">
+                            <path d="{{ $stats['evolution_mois']['total'] >= 0 ? 'M23 6l-9.5 9.5-5-5L1 18' : 'M23 18l-9.5-9.5-5 5L1 6' }}"/>
+                        </svg>
+                        <span>{{ $stats['evolution_mois']['total'] >= 0 ? '+' : '' }}{{ $stats['evolution_mois']['total'] }}% ce mois-ci</span>
                     </div>
                 </div>
             </div>
@@ -130,7 +166,9 @@
                     <div class="card-header">
                         <h3>Parcelles en Litige</h3>
                         <div class="card-icon">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
                         </div>
                     </div>
                     <div class="card-content">
@@ -146,9 +184,11 @@
                     <div class="mini-chart-container">
                         <canvas id="litigesChart" width="100" height="60"></canvas>
                     </div>
-                    <div class="card-trend down">
-                        <svg viewBox="0 0 24 24"><path d="M23 18l-9.5-9.5-5 5L1 6"/></svg>
-                        <span>-2% ce mois-ci</span>
+                    <div class="card-trend {{ $stats['evolution_mois']['litiges'] >= 0 ? '' : 'down' }}">
+                        <svg viewBox="0 0 24 24">
+                            <path d="{{ $stats['evolution_mois']['litiges'] >= 0 ? 'M23 6l-9.5 9.5-5-5L1 18' : 'M23 18l-9.5-9.5-5 5L1 6' }}"/>
+                        </svg>
+                        <span>{{ $stats['evolution_mois']['litiges'] >= 0 ? '+' : '' }}{{ $stats['evolution_mois']['litiges'] }}% ce mois-ci</span>
                     </div>
                 </div>
             </div>
@@ -162,7 +202,9 @@
                     <div class="card-header">
                         <h3>Parcelles Attribuées</h3>
                         <div class="card-icon">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
                         </div>
                     </div>
                     <div class="card-content">
@@ -178,46 +220,54 @@
                     <div class="mini-chart-container">
                         <canvas id="attribueesChart" width="100" height="60"></canvas>
                     </div>
-                    <div class="card-trend">
-                        <svg viewBox="0 0 24 24"><path d="M23 6l-9.5 9.5-5-5L1 18"/></svg>
-                        <span>+8% ce mois-ci</span>
+                    <div class="card-trend {{ $stats['evolution_mois']['attribuees'] >= 0 ? '' : 'down' }}">
+                        <svg viewBox="0 0 24 24">
+                            <path d="{{ $stats['evolution_mois']['attribuees'] >= 0 ? 'M23 6l-9.5 9.5-5-5L1 18' : 'M23 18l-9.5-9.5-5 5L1 6' }}"/>
+                        </svg>
+                        <span>{{ $stats['evolution_mois']['attribuees'] >= 0 ? '+' : '' }}{{ $stats['evolution_mois']['attribuees'] }}% ce mois-ci</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Carte Types de Terrain -->
+        <!-- Carte Types d'Occupation -->
         <div class="stat-card" data-aos-delay="200">
             <div class="card-inner">
                 <div class="card-front">
                     <div class="card-bg"></div>
                     <div class="card-header">
-                        <h3>Types de Terrain</h3>
+                        <h3>Types d'Occupation</h3>
                         <div class="card-icon">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
                         </div>
                     </div>
                     <div class="card-content">
-                        <p class="stat-value">{{ $stats['residentiel'] + $stats['commercial'] + $stats['agricole'] + $stats['institutionnel'] }}</p>
+                        <p class="stat-value">{{ $stats['autorise'] + $stats['anarchique'] + $stats['libre'] }}</p>
                         <div class="stat-progress">
                             <div class="progress-bar" style="width: 100%;"></div>
                         </div>
-                        <p class="stat-description">Résidentiel: {{ $stats['residentiel'] }} | Commercial: {{ $stats['commercial'] }}</p>
+                        <p class="stat-description">
+                            Autorisé: {{ $stats['autorise'] }} | Anarchique: {{ $stats['anarchique'] }} | Libre: {{ $stats['libre'] }}
+                        </p>
                     </div>
                     <div class="card-sparkle"></div>
                 </div>
                 <div class="card-back">
                     <div class="mini-chart-container">
-                        <canvas id="typesTerrainChart" width="100" height="60"></canvas>
+                        <canvas id="typesOccupationChart" width="100" height="60"></canvas>
                     </div>
                     <div class="type-distribution">
                         <div class="type-item">
-                            <span class="type-dot residentiel"></span>
-                            <span>Résidentiel</span>
+                            <span class="type-dot autorise"></span>
+                            <span>Autorisé: {{ $stats['autorise'] }}</span>
                         </div>
                         <div class="type-item">
-                            <span class="type-dot commercial"></span>
-                            <span>Commercial</span>
+                            <span class="type-dot anarchique"></span>
+                            <span>Anarchique: {{ $stats['anarchique'] }}</span>
+                        </div>
+                        <div class="type-item">
+                            <span class="type-dot libre"></span>
+                            <span>Libre: {{ $stats['libre'] }}</span>
                         </div>
                     </div>
                 </div>
@@ -234,35 +284,35 @@
         <div class="chart-row">
             <div class="chart-card">
                 <div class="chart-header">
-                    <h3>Répartition par type de terrain</h3>
+                    <h3>Répartition par type d'occupation</h3>
                     <div class="chart-actions">
                         <button class="chart-action-btn" title="Télécharger le graphique">
-                            <svg viewBox="0 0 24 24"><path d="M12 16l4-4m0 0l-4-4m4 4H4"/></svg>
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 16l4-4m0 0l-4-4 4 4H4"/>
+                            </svg>
                         </button>
                         <button class="chart-action-btn" title="Agrandir le graphique">
-                            <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                            <svg viewBox="0 0 24 24">
+                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                            </svg>
                         </button>
                     </div>
                 </div>
                 <div class="chart-container">
-                    <canvas id="terrainTypeChart"></canvas>
+                    <canvas id="occupationTypeChart"></canvas>
                 </div>
                 <div class="chart-legend">
                     <div class="legend-item">
-                        <span class="legend-color" style="background-color: rgba(26, 95, 35, 0.8);"></span>
-                        <span class="legend-label">Résidentiel</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-color" style="background-color: rgba(249, 168, 37, 0.8);"></span>
-                        <span class="legend-label">Commercial</span>
+                        <span class="legend-color" style="background-color: rgba(56, 161, 105, 0.8);"></span>
+                        <span class="legend-label">Autorisé</span>
                     </div>
                     <div class="legend-item">
                         <span class="legend-color" style="background-color: rgba(227, 6, 19, 0.8);"></span>
-                        <span class="legend-label">Agricole</span>
+                        <span class="legend-label">Anarchique</span>
                     </div>
                     <div class="legend-item">
-                        <span class="legend-color" style="background-color: rgba(10, 102, 194, 0.8);"></span>
-                        <span class="legend-label">Institutionnel</span>
+                        <span class="legend-color" style="background-color: rgba(49, 130, 206, 0.8);"></span>
+                        <span class="legend-label">Libre</span>
                     </div>
                 </div>
             </div>
@@ -274,7 +324,9 @@
                             <svg viewBox="0 0 24 24"><path d="M12 16l4-4m0 0l-4-4m4 4H4"/></svg>
                         </button>
                         <button class="chart-action-btn" title="Agrandir le graphique">
-                            <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                            <svg viewBox="0 0 24 24">
+                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -295,7 +347,7 @@
         </div>
     </div>
 
-    <!-- Carte géographique interactive -->
+    <!-- Carte géographique interactive MISE À JOUR -->
     <div class="map-section" data-aos="fade-up" data-aos-delay="300">
         <div class="section-header">
             <h2>Répartition géographique</h2>
@@ -303,20 +355,43 @@
         </div>
         <div class="map-container">
             <div class="map-visual">
-                <div class="map-placeholder">
-                    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
-                    <p>Carte interactive des arrondissements</p>
-                    <button class="action-btn view-btn">Activer la carte</button>
+                <div id="interactive-map"></div>
+                <div class="map-controls">
+                    <h3><i class="fas fa-layer-group"></i> Légende</h3>
+
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #38A169;"></div>
+                        <div class="legend-label">Autorisé</div>
+                    </div>
+
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #E30613;"></div>
+                        <div class="legend-label">Anarchique</div>
+                    </div>
+
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #3182CE;"></div>
+                        <div class="legend-label">Libre</div>
+                    </div>
+
+                    <div class="map-actions">
+                        <button class="map-action-btn" id="zoom-to-bounds">
+                            <i class="fas fa-expand"></i> Voir toutes les parcelles
+                        </button>
+                        <button class="map-action-btn" id="reset-map">
+                            <i class="fas fa-sync-alt"></i> Réinitialiser la vue
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="map-legend">
-                <h4>Légende</h4>
+                <h4>Répartition par arrondissement</h4>
                 <div class="legend-items">
-                    @foreach ($arrondissements as $index => $arr)
+                    @foreach ($stats['arrondissements_data'] as $arrondissement => $count)
                     <div class="legend-item">
-                        <span class="legend-color" style="background-color: hsl({{ $index * 30 }}, 70%, 50%);"></span>
-                        <span class="legend-label">{{ $arr }}</span>
-                        <span class="legend-value">{{ $index + 12 }} parcelles</span>
+                        <span class="legend-color" style="background-color: hsl({{ $loop->index * 30 }}, 70%, 50%);"></span>
+                        <span class="legend-label">{{ $arrondissement }}</span>
+                        <span class="legend-value">{{ $count }} parcelles</span>
                     </div>
                     @endforeach
                 </div>
@@ -338,7 +413,9 @@
             <div class="control-right">
                 <div class="search-box">
                     <input type="text" id="quick-search" placeholder="Rechercher..." aria-label="Rechercher des parcelles" aria-describedby="search-results">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
                     <button id="clear-search" class="clear-search" style="display: none;" aria-label="Effacer la recherche">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
@@ -346,7 +423,9 @@
                 <div class="control-actions">
                     <button id="toggle-view" class="view-toggle" title="Changer de vue" aria-label="Passer à la vue cartes" aria-controls="table-view card-view">
                         <svg id="table-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-                        <svg id="grid-icon" viewBox="0 0 24 24" style="display:none;" aria-hidden="true"><path d="M4 6h4M4 10h4M4 14h4M4 18h4m4-12h4m-4 4h4m-4 4h4m-4 4h4m4-12h4m-4 4h4m-4 4h4m-4 4h4"/></svg>
+                        <svg id="grid-icon" viewBox="0 0 24 24" style="display:none;" aria-hidden="true">
+                            <path d="M4 6h4M4 10h4M4 14h4M4 18h4m4-12h4m-4 4h4m-4 4h4m-4 4h4m4-12h4m-4 4h4m-4 4h4m-4 4h4"/>
+                        </svg>
                     </button>
                     <button class="action-btn filter-toggle" id="toggle-filters-main">
                         <svg viewBox="0 0 24 24"><path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
@@ -383,17 +462,18 @@
                         </div>
                     </div>
                     <div class="filter-group">
-                        <label for="type_terrain">Type de Terrain</label>
+                        <label for="type_occupation">Type d'Occupation</label>
                         <div class="select-wrapper">
-                            <select name="type_terrain" id="type_terrain">
+                            <select name="type_occupation" id="type_occupation">
                                 <option value="">Tous</option>
-                                @foreach ($types_terrain as $type)
-                                    <option value="{{ $type }}" {{ request('type_terrain') == $type ? 'selected' : '' }}>{{ $type }}</option>
+                                @foreach ($types_occupation as $type)
+                                    <option value="{{ $type }}" {{ request('type_occupation') == $type ? 'selected' : '' }}>{{ $type }}</option>
                                 @endforeach
                             </select>
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
                         </div>
                     </div>
+
                     <div class="filter-group">
                         <label for="statut_attribution">Statut</label>
                         <div class="select-wrapper">
@@ -436,7 +516,9 @@
                         Appliquer
                     </button>
                     <a href="{{ route('parcelles.index') }}" class="action-btn reset-btn" aria-label="Réinitialiser les filtres">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
                         Réinitialiser
                     </a>
                 </div>
@@ -450,7 +532,9 @@
         @if ($parcelles->isEmpty())
             <div class="empty-state">
                 <div class="empty-content">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M9.172 16.172a4 4 0 015.656 0M9 12h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
                     <h3>Aucune parcelle trouvée</h3>
                     <p>Modifiez vos filtres ou créez une nouvelle parcelle.</p>
                     @can('create-parcels')
@@ -477,7 +561,9 @@
                             </th>
                             <th data-sort="statut_attribution">
                                 <span>Statut</span>
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M10 10l5 5 5-5"/>
+                                </svg>
                             </th>
                             <th data-sort="nouvelle_superficie">
                                 <span>Superficie</span>
@@ -489,7 +575,9 @@
                             </th>
                             <th data-sort="structure">
                                 <span>Structure</span>
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M7 10l5 5 5-5"/>
+                                </svg>
                             </th>
                             <th>Actions</th>
                         </tr>
@@ -511,7 +599,9 @@
                                     <div class="cell-text">{{ $parcelle->arrondissement }}</div>
                                     @if ($parcelle->latitude && $parcelle->longitude)
                                     <a href="https://www.google.com/maps?q={{ $parcelle->latitude }},{{ $parcelle->longitude }}" target="_blank" class="map-link" title="Voir sur Google Maps" aria-label="Voir la parcelle sur Google Maps">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
                                     </a>
                                     @endif
                                 </div>
@@ -565,7 +655,9 @@
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="action-btn delete-btn" title="Supprimer" aria-label="Supprimer la parcelle">
-                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4h16"/>
+                                            </svg>
                                         </button>
                                     </form>
                                     @endcan
@@ -589,7 +681,9 @@
                         </div>
                         <div class="card-middle">
                             <div class="card-row">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M7.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                </svg>
                                 <span>{{ $parcelle->arrondissement }}</span>
                                 @if ($parcelle->latitude && $parcelle->longitude)
                                 <a href="https://www.google.com/maps?q={{ $parcelle->latitude }},{{ $parcelle->longitude }}" target="_blank" class="map-link" title="Voir sur Google Maps" aria-label="Voir la parcelle sur Google Maps">
@@ -598,11 +692,15 @@
                                 @endif
                             </div>
                             <div class="card-row">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l2-2h14l2 2M3 6v14a2 2 0 002 2h14a2 2 0 002-2V6M3 6l2 2h14l2-2"/></svg>
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M3 6l2-2h14l2 2M3 6v14a2 2 0 002 2h14a2 2 0 002-2V6M3 6l2-2h14l2-2"/>
+                                </svg>
                                 <span>{{ number_format($parcelle->nouvelle_superficie ?? $parcelle->ancienne_superficie ?? 0, 2) }} m²</span>
                             </div>
                             <div class="card-row">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
                                 @php
                                     $statusColors = [
                                         'attribué' => 'text-success',
@@ -614,7 +712,9 @@
                                 <span class="{{ $color }}">{{ ucfirst($parcelle->statut_attribution ?? 'N/A') }}</span>
                             </div>
                             <div class="card-row">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0"/>
+                                </svg>
                                 @if ($parcelle->litige)
                                     <span class="text-danger">
                                         <span class="pulse-dot"></span>
@@ -625,20 +725,29 @@
                                 @endif
                             </div>
                             <div class="card-row">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1.5m-4 0h4"/>
+                                </svg>
                                 <span class="truncate">{{ $parcelle->structure ?? 'Aucune structure' }}</span>
                             </div>
                         </div>
                         <div class="card-bottom">
                             <a href="{{ route('parcelles.show', $parcelle) }}" class="card-action view" aria-label="Voir les détails de la parcelle">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
                                 Détails
                             </a>
+
                             @can('edit-parcelles')
                             <a href="{{ route('parcelles.edit', $parcelle) }}" class="card-action edit" aria-label="Modifier la parcelle">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M11 5H1a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
                                 Modifier
                             </a>
+
                             @endcan
                         </div>
                     </div>
@@ -659,9 +768,12 @@
                         </span>
                     @else
                         <a href="{{ $parcelles->previousPageUrl() }}" class="pagination-link" rel="prev">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M15 19l-7-7 7-7"/>
+                            </svg>
                             Précédent
                         </a>
+
                     @endif
 
                     @foreach ($parcelles->getUrlRange(1, $parcelles->lastPage()) as $page => $url)
@@ -718,33 +830,31 @@
             }
         });
 
+
         // Configuration des graphiques
-        const terrainTypeCtx = document.getElementById('terrainTypeChart').getContext('2d');
+        const occupationTypeCtx = document.getElementById('occupationTypeChart').getContext('2d');
         const attributionStatusCtx = document.getElementById('attributionStatusChart').getContext('2d');
 
-        // Graphique de répartition par type de terrain
-        const terrainTypeChart = new Chart(terrainTypeCtx, {
+        // Graphique de répartition par type d'occupation
+        const occupationTypeChart = new Chart(occupationTypeCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Résidentiel', 'Commercial', 'Agricole', 'Institutionnel'],
+                labels: ['Autorisé', 'Anarchique', 'Libre'],
                 datasets: [{
                     data: [
-                        {{ $stats['residentiel'] }},
-                        {{ $stats['commercial'] }},
-                        {{ $stats['agricole'] }},
-                        {{ $stats['institutionnel'] }}
+                        {{ $stats['autorise'] }},
+                        {{ $stats['anarchique'] }},
+                        {{ $stats['libre'] }}
                     ],
                     backgroundColor: [
-                        'rgba(26, 95, 35, 0.8)', // Vert foncé
-                        'rgba(249, 168, 37, 0.8)', // Jaune doré
-                        'rgba(227, 6, 19, 0.8)', // Rouge béninois
-                        'rgba(10, 102, 194, 0.8)' // Bleu institutionnel
+                        'rgba(56, 161, 105, 0.8)', // Vert pour autorisé
+                        'rgba(227, 6, 19, 0.8)',   // Rouge pour anarchique
+                        'rgba(49, 130, 206, 0.8)'  // Bleu pour libre
                     ],
                     borderColor: [
-                        'rgba(26, 95, 35, 1)',
-                        'rgba(249, 168, 37, 1)',
+                        'rgba(56, 161, 105, 1)',
                         'rgba(227, 6, 19, 1)',
-                        'rgba(10, 102, 194, 1)'
+                        'rgba(49, 130, 206, 1)'
                     ],
                     borderWidth: 1
                 }]
@@ -754,6 +864,10 @@
                 plugins: {
                     legend: {
                         position: 'bottom',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Répartition par type d\'occupation'
                     }
                 },
                 animation: {
@@ -796,6 +910,140 @@
                     animateRotate: true
                 }
             }
+        });
+
+        // INITIALISATION DE LA CARTE INTERACTIVE
+        const map = L.map('interactive-map').setView([6.4485, 2.3554], 13);
+
+        // Ajout des tuiles OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Données des parcelles
+        const parcellesData = [
+            @foreach ($parcelles as $parcelle)
+            @if($parcelle->latitude && $parcelle->longitude)
+            {
+                id: {{ $parcelle->id }},
+                numero: "{{ $parcelle->numero }}",
+                parcelle: "{{ $parcelle->parcelle }}",
+                latitude: {{ $parcelle->latitude }},
+                longitude: {{ $parcelle->longitude }},
+                arrondissement: "{{ $parcelle->arrondissement }}",
+                statut: "{{ $parcelle->statut_attribution }}",
+                type_occupation: "{{ $parcelle->type_occupation }}", // CORRIGÉ: type_terrain → type_occupation
+                superficie: {{ $parcelle->nouvelle_superficie ?? $parcelle->ancienne_superficie ?? 0 }},
+                litige: {{ $parcelle->litige ? 'true' : 'false' }},
+                structure: "{{ $parcelle->structure ?? 'N/A' }}"
+            },
+            @endif
+            @endforeach
+        ];
+
+        // Fonction pour déterminer la couleur en fonction du type d'occupation
+        function getColorForOccupation(type) {
+            switch(type) {
+                case 'Autorisé': return '#38A169'; // Vert
+                case 'Anarchique': return '#E30613'; // Rouge
+                case 'Libre': return '#3182CE'; // Bleu
+                default: return '#A0AEC0'; // Gris
+            }
+        }
+
+        // Fonction pour formater les nombres
+        function formatNumber(num) {
+            return new Intl.NumberFormat('fr-FR').format(num);
+        }
+
+        // Création des marqueurs pour chaque parcelle
+        const markers = [];
+        let bounds = L.latLngBounds();
+
+        parcellesData.forEach(parcelle => {
+            const marker = L.marker([parcelle.latitude, parcelle.longitude], {
+                icon: L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="background-color: ${getColorForOccupation(parcelle.type_occupation)};
+                            width: 20px;
+                            height: 20px;
+                            border-radius: 50%;
+                            border: 2px solid white;
+                            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+                            cursor: pointer;"></div>`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                })
+            });
+
+            // Contenu du popup
+            const popupContent = `
+                <div class="custom-popup">
+                    <div class="popup-header">
+                        <div class="popup-title">${parcelle.parcelle}</div>
+                        <div class="popup-status status-${parcelle.type_occupation.toLowerCase()}">
+                            ${parcelle.type_occupation}
+                        </div>
+                    </div>
+                    <div class="popup-details">
+                        <div class="popup-detail">
+                            <span class="label">Numéro:</span>
+                            <span class="value">${parcelle.numero}</span>
+                        </div>
+                        <div class="popup-detail">
+                            <span class="label">Arrondissement:</span>
+                            <span class="value">${parcelle.arrondissement}</span>
+                        </div>
+                        <div class="popup-detail">
+                            <span class="label">Type:</span>
+                            <span class="value">${parcelle.type_occupation}</span>
+                        </div>
+                        <div class="popup-detail">
+                            <span class="label">Superficie:</span>
+                            <span class="value">${formatNumber(parcelle.superficie)} m²</span>
+                        </div>
+                        <div class="popup-detail">
+                            <span class="label">Structure:</span>
+                            <span class="value">${parcelle.structure}</span>
+                        </div>
+                    </div>
+                    <div class="popup-actions">
+                        <button class="popup-btn btn-view" onclick="window.location.href='/parcelles/${parcelle.id}'">
+                            <i class="fas fa-eye"></i> Voir détails
+                        </button>
+                        <button class="popup-btn btn-edit" onclick="window.location.href='/parcelles/${parcelle.id}/edit'">
+                            <i class="fas fa-edit"></i> Modifier
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Liaison du popup au marqueur
+            marker.bindPopup(popupContent, {
+                maxWidth: 300,
+                className: 'custom-popup-container'
+            });
+
+            // Ajout du marqueur à la carte
+            marker.addTo(map);
+            markers.push(marker);
+            bounds.extend(marker.getLatLng());
+        });
+
+        // Ajuster la vue de la carte pour montrer tous les marqueurs
+        if (markers.length > 0) {
+            map.fitBounds(bounds, { padding: [50, 50] });
+        }
+
+        // Gestion des boutons de contrôle de la carte
+        document.getElementById('zoom-to-bounds').addEventListener('click', function() {
+            if (markers.length > 0) {
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        });
+
+        document.getElementById('reset-map').addEventListener('click', function() {
+            map.setView([6.4485, 2.3554], 13);
         });
 
         // Gestion des filtres avancés
@@ -993,22 +1241,11 @@
                 this.style.background = '';
             });
         });
-
-        // Bouton d'activation de la carte
-        const activateMapBtn = document.querySelector('.map-placeholder .action-btn');
-        if (activateMapBtn) {
-            activateMapBtn.addEventListener('click', function() {
-                this.textContent = 'Carte activée';
-                this.classList.add('active');
-                const placeholder = this.closest('.map-placeholder');
-                placeholder.innerHTML = '<div class="map-activated"><svg viewBox="0 0 24 24"><path d="M9 20l-6-6m0 0l6-6m-6 6h18"/></svg><p>Carte interactive activée</p></div>';
-            });
-        }
     });
 </script>
 
 <style>
-    /* Variables CSS premium */
+    /* Variables CSS premium améliorées */
     :root {
         /* Couleurs principales */
         --primary: #1A5F23; /* Vert foncé */
@@ -1018,41 +1255,49 @@
         --secondary-light: #FCD116; /* Jaune clair pour survol */
         --accent: #E30613; /* Rouge béninois */
         --accent-light: rgba(227, 6, 19, 0.1);
-        --neutral: #F5F5F5; /* Gris clair */
-        --neutral-dark: #E0E0E0;
-        --black: #333333; /* Noir */
+        --neutral: #F8FAFC; /* Gris clair plus doux */
+        --neutral-dark: #E2E8F0;
+        --black: #2D3748; /* Noir plus doux */
         --white: #FFFFFF; /* Blanc */
-        --success: #4CAF50; /* Vert clair */
-        --blue: #0A66C2; /* Bleu institutionnel */
+        --success: #38A169; /* Vert clair */
+        --blue: #3182CE; /* Bleu institutionnel plus doux */
 
-        /* Ombres premium */
-        --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.08);
-        --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.12);
-        --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.16);
-        --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.2);
-        --shadow-xxl: 0 20px 50px rgba(0, 0, 0, 0.24);
+        /* Ombres premium améliorées */
+        --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --shadow-xxl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 
-        /* Bordures */
-        --radius-sm: 8px;
-        --radius-md: 12px;
-        --radius-lg: 16px;
-        --radius-xl: 20px;
-        --radius-xxl: 24px;
+        /* Bordures améliorées */
+        --radius-sm: 6px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --radius-xl: 16px;
+        --radius-xxl: 20px;
         --radius-full: 9999px;
 
-        /* Transitions premium */
-        --transition: all 0.3s ease;
-        --transition-slow: all 0.5s ease;
-        --transition-bounce: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        /* Transitions premium améliorées */
+        --transition: all 0.2s ease-in-out;
+        --transition-slow: all 0.3s ease-in-out;
+        --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-        /* Dégradés */
+        /* Dégradés améliorés */
         --gradient-primary: linear-gradient(135deg, var(--primary) 0%, #2c7744 100%);
-        --gradient-success: linear-gradient(135deg, var(--success) 0%, #66bb6a 100%);
-        --gradient-accent: linear-gradient(135deg, var(--accent) 0%, #ff5252 100%);
-        --gradient-secondary: linear-gradient(135deg, var(--secondary) 0%, #ffd54f 100%);
+        --gradient-success: linear-gradient(135deg, var(--success) 0%, #48BB78 100%);
+        --gradient-accent: linear-gradient(135deg, var(--accent) 0%, #FC8181 100%);
+        --gradient-secondary: linear-gradient(135deg, var(--secondary) 0%, #F6E05E 100%);
+
+        /* Espacement amélioré */
+        --space-xs: 0.25rem;
+        --space-sm: 0.5rem;
+        --space-md: 1rem;
+        --space-lg: 1.5rem;
+        --space-xl: 2rem;
+        --space-2xl: 3rem;
     }
 
-    /* Styles globaux premium */
+    /* Styles globaux premium améliorés */
     * {
         margin: 0;
         padding: 0;
@@ -1060,11 +1305,12 @@
     }
 
     body {
-        font-family: 'Roboto', Arial, sans-serif;
+        font-family: 'Inter', 'Roboto', Arial, sans-serif;
         background-color: var(--neutral);
         color: var(--black);
         line-height: 1.6;
         overflow-x: hidden;
+        font-size: 14px;
     }
 
     svg {
@@ -1077,16 +1323,17 @@
         stroke-linejoin: round;
     }
 
-    /* Conteneur principal premium */
+    /* Conteneur principal premium amélioré */
     .dashboard-container {
         max-width: 1800px;
         margin: 0 auto;
-        padding: 2rem;
+        padding: var(--space-xl);
         background: var(--neutral);
         position: relative;
+        min-height: 100vh;
     }
 
-    /* Particules background */
+    /* Particules background amélioré */
     #particles-js {
         position: absolute;
         top: 0;
@@ -1102,38 +1349,64 @@
         z-index: 1;
     }
 
-    /* En-tête premium */
+    /* En-tête premium amélioré */
     .dashboard-header {
-        margin-bottom: 2.5rem;
-        border-radius: var(--radius-xxl);
+        margin-bottom: var(--space-2xl);
+        border-radius: var(--radius-xl);
         background: var(--gradient-primary);
         box-shadow: var(--shadow-xl);
-        min-height: 200px;
+        min-height: 220px;
         display: flex;
         align-items: center;
         position: relative;
         overflow: hidden;
+        transition: var(--transition-slow);
     }
+
+    .dashboard-header:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-xxl);
+    }
+    #interactive-map {
+    height: 100%;
+    width: 100%;
+    z-index: 1;
+}
+
+.custom-marker {
+    background: transparent;
+    border: none;
+}
+
+.leaflet-popup-content-wrapper {
+    border-radius: 8px;
+}
+
+.custom-popup-container .leaflet-popup-content {
+    margin: 0;
+    width: 100% !important;
+}
 
     .dashboard-header::before {
         content: '';
         position: absolute;
         top: -50%;
         right: -50%;
-        width: 100%;
+        width: 200%;
         height: 200%;
         background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
         transform: rotate(15deg);
     }
 
+
     .header-content {
         position: relative;
         z-index: 2;
         width: 100%;
-        padding: 2.5rem 3rem;
+        padding: var(--space-2xl);
         display: flex;
         flex-direction: column;
-        gap: 1.5rem;
+        gap: var(--space-lg);
     }
 
     @media (min-width: 968px) {
@@ -1145,24 +1418,20 @@
     }
 
     .title-group {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 1rem;
-        display: block;
+        flex: 1;
     }
 
     .title-badge {
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
         border-radius: var(--radius-full);
         background: rgba(255, 255, 255, 0.2);
         color: var(--white);
         font-size: 0.875rem;
         font-weight: 600;
-        margin-bottom: 0.75rem;
+        margin-bottom: var(--space-md);
         backdrop-filter: blur(10px);
         animation: pulse 2s infinite;
     }
@@ -1180,57 +1449,82 @@
     }
 
     .dashboard-title {
-        font-family: 'Roboto', Arial, sans-serif;
-        font-size: 2.25rem;
+        font-family: 'Inter', 'Roboto', Arial, sans-serif;
+        font-size: 2.5rem;
         font-weight: 700;
         color: var(--white);
         margin: 0;
         line-height: 1.2;
         text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: var(--space-sm);
     }
 
     .dashboard-subtitle {
-        font-size: 1.1rem;
+        font-size: 1.125rem;
         color: rgba(255, 255, 255, 0.9);
-        margin-top: 0.75rem;
+        margin-bottom: var(--space-lg);
         max-width: 600px;
+        font-weight: 400;
+    }
+    .type-dot.autorise {
+        background: #38A169; /* Vert */
     }
 
-    /* Quick stats */
+    .type-dot.anarchique {
+        background: #E30613; /* Rouge */
+    }
+
+    .type-dot.libere {
+        background: #3182CE; /* Bleu pour Libre - NOUVEAU */
+    }
+
+    /* Quick stats amélioré */
     .quick-stats {
         display: flex;
-        gap: 1.5rem;
-        margin-top: 1.5rem;
+        gap: var(--space-lg);
+        margin-top: var(--space-lg);
+        flex-wrap: wrap;
     }
 
     .quick-stat {
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 0.75rem 1rem;
+        padding: var(--space-md);
         background: rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-md);
+        border-radius: var(--radius-lg);
         backdrop-filter: blur(10px);
+        min-width: 120px;
+        transition: var(--transition);
+    }
+
+    .quick-stat:hover {
+        transform: translateY(-2px);
+        background: rgba(255, 255, 255, 0.15);
     }
 
     .quick-stat-value {
-        font-size: 1.5rem;
+        font-size: 1.75rem;
         font-weight: 700;
         color: var(--white);
+        margin-bottom: var(--space-xs);
     }
 
     .quick-stat-label {
         font-size: 0.75rem;
         color: rgba(255, 255, 255, 0.8);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
     .header-actions {
         display: flex;
-        gap: 1rem;
+        gap: var(--space-md);
         flex-wrap: wrap;
+        justify-content: flex-end;
     }
 
-    /* Export dropdown premium */
+    /* Export dropdown premium amélioré */
     .export-dropdown {
         position: relative;
         display: inline-block;
@@ -1239,25 +1533,46 @@
     .dropdown-toggle {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: var(--space-sm);
         position: relative;
+    }
+
+    .action-btn.import-btn {
+        background-color: var(--success);
+        color: white;
+        border-radius: var(--radius-md);
+        padding: var(--space-md) var(--space-lg);
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-sm);
+        position: relative;
+        text-decoration: none;
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+    .action-btn.import-btn:hover {
+        background-color: #2F855A;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
     }
 
     .dropdown-menu {
         position: absolute;
         right: 0;
         top: 100%;
-        margin-top: 8px;
+        margin-top: var(--space-xs);
         background: var(--white);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-xl);
         display: none;
         z-index: 100;
-        min-width: 140px;
-        padding: 8px 0;
+        min-width: 160px;
+        padding: var(--space-sm) 0;
         opacity: 0;
         transform: translateY(-10px);
         transition: all 0.3s ease;
+        border: 1px solid var(--neutral-dark);
     }
 
     .export-dropdown:hover .dropdown-menu,
@@ -1270,12 +1585,12 @@
     .dropdown-item {
         width: 100%;
         text-align: left;
-        padding: 10px 16px;
+        padding: var(--m) var(--space-md);
         background: none;
         border: none;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: var(--space-sm);
         font-size: 0.875rem;
         cursor: pointer;
         transition: var(--transition);
@@ -1302,12 +1617,12 @@
         transform: rotate(180deg);
     }
 
-    /* Boutons d'action premium */
+    /* Boutons d'action premium améliorés */
     .action-btn {
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 1rem 1.5rem;
+        gap: var(--space-sm);
+        padding: var(--space-md) var(--space-lg);
         border-radius: var(--radius-md);
         font-weight: 500;
         transition: var(--transition);
@@ -1319,6 +1634,7 @@
         justify-content: center;
         cursor: pointer;
         box-shadow: var(--shadow-sm);
+        font-size: 0.875rem;
     }
 
     .action-btn svg {
@@ -1355,7 +1671,7 @@
     }
 
     .apply-btn:hover {
-        background: #388e3c;
+        background: #2F855A;
         transform: translateY(-2px);
         box-shadow: var(--shadow-md);
     }
@@ -1363,7 +1679,7 @@
     .reset-btn {
         background: var(--neutral);
         color: var(--black);
-        border: 1px solid var(--neutral);
+        border: 1px solid var(--neutral-dark);
     }
 
     .reset-btn:hover {
@@ -1416,23 +1732,23 @@
         left: 100%;
     }
 
-    /* Grille de statistiques premium */
+    /* Grille de statistiques premium améliorée */
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2.5rem;
+        gap: var(--space-lg);
+        margin-bottom: var(--space-2xl);
     }
 
-    /* Cartes de statistiques premium avec effet 3D */
+    /* Cartes de statistiques premium avec effet 3D amélioré */
     .stat-card {
         background: var(--white);
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-xl);
         box-shadow: var(--shadow-md);
         overflow: hidden;
         transition: var(--transition);
-        border: 1px solid var(--neutral);
-        height: 220px;
+        border: 1px solid var(--neutral-dark);
+        height: 240px;
         perspective: 1000px;
     }
 
@@ -1454,7 +1770,7 @@
         width: 100%;
         height: 100%;
         backface-visibility: hidden;
-        padding: 1.5rem;
+        padding: var(--space-lg);
     }
 
     .card-bg {
@@ -1486,7 +1802,7 @@
         justify-content: center;
         background: var(--white);
         flex-direction: column;
-        gap: 1rem;
+        gap: var(--space-md);
     }
 
     .mini-chart-container {
@@ -1497,7 +1813,7 @@
     .card-trend {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: var(--space-sm);
         font-size: 0.875rem;
         color: var(--success);
     }
@@ -1505,6 +1821,7 @@
     .card-trend.down {
         color: var(--accent);
     }
+
 
     .card-trend svg {
         width: 1rem;
@@ -1514,14 +1831,14 @@
     .type-distribution {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: var(--space-sm);
         width: 100%;
     }
 
     .type-item {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: var(--space-sm);
         font-size: 0.875rem;
     }
 
@@ -1531,19 +1848,11 @@
         border-radius: 50%;
     }
 
-    .type-dot.residentiel {
-        background: var(--primary);
-    }
-
-    .type-dot.commercial {
-        background: var(--secondary);
-    }
-
     .card-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 1rem;
+        margin-bottom: var(--space-md);
         position: relative;
         z-index: 1;
     }
@@ -1568,13 +1877,13 @@
     .card-content {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: var(--space-sm);
         position: relative;
         z-index: 1;
     }
 
     .stat-value {
-        font-size: 2.25rem;
+        font-size: 2.5rem;
         font-weight: 700;
         color: var(--black);
     }
@@ -1611,42 +1920,46 @@
     .stat-description {
         font-size: 0.875rem;
         color: var(--black);
+        opacity: 0.7;
     }
 
-    /* Section des graphiques premium */
+    /* Section des graphiques premium améliorée */
     .charts-section {
-        margin-bottom: 2.5rem;
+        margin-bottom: var(--space-2xl);
     }
 
     .section-header {
-        margin-bottom: 1.5rem;
+        margin-bottom: var(--space-lg);
+        text-align: center;
     }
 
     .section-header h2 {
-        font-size: 1.5rem;
+        font-size: 1.75rem;
         font-weight: 600;
         color: var(--black);
-        margin-bottom: 0.5rem;
+        margin-bottom: var(--space-sm);
     }
 
     .section-header p {
         color: var(--black);
-        font-size: 0.875rem;
+        font-size: 1rem;
+        opacity: 0.7;
     }
 
     .chart-row {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-        gap: 1.5rem;
+        gap: var(--space-lg);
     }
 
     .chart-card {
         background: var(--white);
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-xl);
         box-shadow: var(--shadow-md);
         overflow: hidden;
-        padding: 1.5rem;
+        padding: var(--space-lg);
         transition: var(--transition);
+        border: 1px solid var(--neutral-dark);
     }
 
     .chart-card:hover {
@@ -1658,18 +1971,19 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 1rem;
+        margin-bottom: var(--space-md);
     }
 
-    .chart-header h3 {
+    .chart-header h1 {
         font-size: 1.125rem;
         font-weight: 600;
         color: var(--black);
     }
 
+
     .chart-actions {
         display: flex;
-        gap: 0.5rem;
+        gap: var(--space-sm);
     }
 
     .chart-action-btn {
@@ -1699,14 +2013,15 @@
     .chart-legend {
         display: flex;
         flex-wrap: wrap;
-        gap: 1rem;
-        margin-top: 1rem;
+        gap: var(--space-md);
+        margin-top: var(--space-md);
+        justify-content: center;
     }
 
     .legend-item {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: var(--space-sm);
     }
 
     .legend-color {
@@ -1722,8 +2037,9 @@
 
     .chart-summary {
         display: flex;
-        gap: 1.5rem;
-        margin-top: 1rem;
+        gap: var(--space-lg);
+        margin-top: var(--space-md);
+        justify-content: center;
     }
 
     .summary-item {
@@ -1731,6 +2047,7 @@
         flex-direction: column;
         align-items: center;
     }
+
 
     .summary-value {
         font-size: 1.5rem;
@@ -1741,45 +2058,49 @@
     .summary-label {
         font-size: 0.75rem;
         color: var(--black);
+        opacity: 0.7;
     }
 
-    /* Section carte géographique */
+    /* Section carte géographique améliorée */
     .map-section {
-        margin-bottom: 2.5rem;
+        margin-bottom: var(--space-2xl);
     }
 
     .map-container {
         display: grid;
         grid-template-columns: 2fr 1fr;
-        gap: 1.5rem;
+        gap: var(--space-lg);
     }
 
     .map-visual {
         background: var(--white);
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-xl);
         box-shadow: var(--shadow-md);
         overflow: hidden;
         height: 400px;
         display: flex;
         align-items: center;
         justify-content: center;
+        border: 1px solid var(--neutral-dark);
     }
 
     .map-placeholder {
         text-align: center;
-        padding: 2rem;
+        padding: var(--space-2xl);
     }
 
     .map-placeholder svg {
         width: 3rem;
         height: 3rem;
         color: var(--black);
-        margin-bottom: 1rem;
+        margin-bottom: var(--space-md);
+        opacity: 0.5;
     }
 
     .map-placeholder p {
-        margin-bottom: 1.5rem;
+        margin-bottom: var(--space-lg);
         color: var(--black);
+        opacity: 0.7;
     }
 
     .map-activated {
@@ -1794,34 +2115,41 @@
         width: 3rem;
         height: 3rem;
         color: var(--primary);
-        margin-bottom: 1rem;
+        margin-bottom: var(--space-md);
     }
 
     .map-legend {
         background: var(--white);
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-xl);
         box-shadow: var(--shadow-md);
-        padding: 1.5rem;
+        padding: var(--space-lg);
         height: fit-content;
+        border: 1px solid var(--neutral-dark);
     }
 
     .map-legend h4 {
         font-size: 1.125rem;
         font-weight: 600;
         color: var(--black);
-        margin-bottom: 1rem;
+        margin-bottom: var(--space-md);
     }
 
     .legend-items {
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
+        gap: var(--space-sm);
     }
 
     .legend-item {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: var(--space-md);
+        padding: var(--space-sm) 0;
+        border-bottom: 1px solid var(--neutral);
+    }
+
+    .legend-item:last-child {
+        border-bottom: none;
     }
 
     .legend-color {
@@ -1842,42 +2170,44 @@
         color: var(--primary);
     }
 
-    /* Panneau principal premium */
+    /* Panneau principal premium amélioré */
     .main-panel {
         background: var(--white);
         border-radius: var(--radius-xl);
         box-shadow: var(--shadow-md);
         overflow: hidden;
+        border: 1px solid var(--neutral-dark);
     }
 
-    /* Barre de contrôle premium */
+    /* Barre de contrôle premium améliorée */
     .control-bar {
         display: flex;
         flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
-        gap: 1.5rem;
-        padding: 1.5rem 2rem;
-        border-bottom: 1px solid var(--neutral);
+        gap: var(--space-lg);
+        padding: var(--space-lg) var(--space-xl);
+        border-bottom: 1px solid var(--neutral-dark);
         background: var(--white);
     }
+
 
     .control-left {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: var(--space-xs);
     }
 
     .control-right {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: var(--space-md);
     }
 
     .section-title {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: var(--space-sm);
         font-size: 1.5rem;
         font-weight: 600;
         color: var(--black);
@@ -1890,9 +2220,11 @@
     .section-subtitle {
         font-size: 0.875rem;
         color: var(--black);
+        opacity: 0.7;
     }
 
-    /* Barre de recherche premium */
+
+    /* Barre de recherche premium améliorée */
     .search-box {
         position: relative;
         width: 300px;
@@ -1900,9 +2232,9 @@
 
     .search-box input {
         width: 100%;
-        padding: 0.75rem 3rem 0.75rem 1rem;
+        padding: var(--space-md) var(--space-xl) var(--space-md) var(--space-md);
         border-radius: var(--radius-md);
-        border: 1px solid var(--neutral);
+        border: 1px solid var(--neutral-dark);
         background: var(--white);
         transition: var(--transition);
         font-size: 0.875rem;
@@ -1917,12 +2249,13 @@
 
     .search-box svg {
         position: absolute;
-        right: 1rem;
+        right: var(--space-md);
         top: 50%;
         transform: translateY(-50%);
         color: var(--black);
         width: 1.25rem;
         height: 1.25rem;
+        opacity: 0.5;
     }
 
     .clear-search {
@@ -1934,17 +2267,19 @@
         border: none;
         cursor: pointer;
         color: var(--black);
-        padding: 0.25rem;
+        padding: var(--space-xs);
         border-radius: var(--radius-full);
         transition: var(--transition);
         display: flex;
         align-items: center;
         justify-content: center;
+        opacity: 0.5;
     }
 
     .clear-search:hover {
         background: var(--neutral);
         color: var(--accent);
+        opacity: 1;
     }
 
     .clear-search svg {
@@ -1954,19 +2289,19 @@
 
     .control-actions {
         display: flex;
-        gap: 0.5rem;
+        gap: var(--space-sm);
     }
 
-    /* Bouton de changement de vue premium */
+    /* Bouton de changement de vue premium amélioré */
     .view-toggle {
-        width: 3rem;
-        height: 3rem;
+        width: 2.5rem;
+        height: 2.5rem;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: var(--radius-md);
         background: var(--white);
-        border: 1px solid var(--neutral);
+        border: 1px solid var(--neutral-dark);
         color: var(--black);
         cursor: pointer;
         transition: var(--transition);
@@ -1979,16 +2314,16 @@
         border-color: var(--primary);
     }
 
-    /* Section des filtres premium */
+    /* Section des filtres premium améliorée */
     .filter-section {
-        border-bottom: 1px solid var(--neutral);
+        border-bottom: 1px solid var(--neutral-dark);
     }
 
     .filter-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 1.25rem 2rem;
+        padding: var(--space-md) var(--space-xl);
         background: var(--white);
         cursor: pointer;
         transition: var(--transition);
@@ -2001,7 +2336,7 @@
     .filter-toggle {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: var(--space-sm);
         background: none;
         border: none;
         color: var(--primary);
@@ -2025,13 +2360,14 @@
         height: 0.5rem;
         border-radius: 50%;
         background: var(--accent);
-        margin-left: 0.5rem;
+        margin-left: var(--space-sm);
         display: inline-block;
     }
 
     .filter-counter {
         font-size: 0.875rem;
         color: var(--black);
+        opacity: 0.7;
     }
 
     .filter-counter span {
@@ -2050,14 +2386,14 @@
     .filter-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 1.5rem;
-        padding: 0 2rem;
+        gap: var(--space-lg);
+        padding: 0 var(--space-xl);
     }
 
     .filter-group {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: var(--space-sm);
     }
 
     .filter-group label {
@@ -2069,9 +2405,9 @@
     .filter-group input,
     .filter-group select {
         width: 100%;
-        padding: 0.75rem 1rem;
+        padding: var(--space-md);
         border-radius: var(--radius-md);
-        border: 1px solid var(--neutral);
+        border: 1px solid var(--neutral-dark);
         background: var(--white);
         font-size: 0.875rem;
         transition: var(--transition);
@@ -2085,30 +2421,32 @@
         box-shadow: 0 0 0 3px rgba(26, 95, 35, 0.1);
     }
 
+
     .select-wrapper {
         position: relative;
     }
 
     .select-wrapper svg {
         position: absolute;
-        right: 1rem;
+        right: var(--space-md);
         top: 50%;
         transform: translateY(-50%);
         pointer-events: none;
         color: var(--black);
         width: 1rem;
         height: 1rem;
+        opacity: 0.5;
     }
 
     .filter-actions {
         display: flex;
         justify-content: flex-end;
-        gap: 1rem;
-        margin-top: 1.5rem;
-        padding: 0 2rem 2rem;
+        gap: var(--space-md);
+        margin-top: var(--space-lg);
+        padding: 0 var(--space-xl) var(--space-xl);
     }
 
-    /* Vue des données premium */
+    /* Vue des données premium améliorée */
     .data-view {
         overflow-x: auto;
         position: relative;
@@ -2119,14 +2457,14 @@
         display: none;
     }
 
-    /* Vue tableau premium */
+    /* Vue tableau premium améliorée */
     table {
         width: 100%;
         border-collapse: collapse;
     }
 
     th {
-        padding: 1.25rem 1.5rem;
+        padding: var(--space-md) var(--space-lg);
         text-align: left;
         font-size: 0.75rem;
         font-weight: 600;
@@ -2134,7 +2472,7 @@
         text-transform: uppercase;
         letter-spacing: 0.05em;
         background: var(--neutral);
-        border-bottom: 1px solid var(--neutral);
+        border-bottom: 1px solid var(--neutral-dark);
         cursor: pointer;
         transition: var(--transition);
         white-space: nowrap;
@@ -2147,7 +2485,7 @@
     th span {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: var(--space-sm);
     }
 
     th svg {
@@ -2162,7 +2500,7 @@
     }
 
     td {
-        padding: 1.25rem 1.5rem;
+        padding: var(--space-md) var(--space-lg);
         border-bottom: 1px solid var(--neutral);
         background: var(--white);
         transition: var(--transition);
@@ -2175,7 +2513,7 @@
     .cell-content {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: var(--space-md);
     }
 
     .ident-badge {
@@ -2187,9 +2525,10 @@
         border-radius: var(--radius-sm);
         background: var(--primary);
         color: var(--white);
-        font-weight: 600;
+        font-weight: 700;
         flex-shrink: 0;
         transition: var(--transition);
+        font-size: 0.875rem;
     }
 
     .cell-content:hover .ident-badge {
@@ -2199,7 +2538,7 @@
     .cell-text {
         display: flex;
         flex-direction: column;
-        gap: 0.25rem;
+        gap: var(--space-xs);
     }
 
     .text-primary {
@@ -2210,6 +2549,7 @@
     .text-secondary {
         font-size: 0.875rem;
         color: var(--black);
+        opacity: 0.7;
     }
 
     .truncate {
@@ -2230,6 +2570,7 @@
         color: var(--blue);
         transition: var(--transition);
         box-shadow: var(--shadow-sm);
+        border: 1px solid var(--neutral-dark);
     }
 
     .map-link:hover {
@@ -2243,43 +2584,44 @@
         height: 1rem;
     }
 
-    /* Badges de statut premium */
+    /* Badges de statut premium améliorés */
     .status-badge {
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
+        gap: var(--space-sm);
+        padding: var(--space-xs) var(--space-sm);
         border-radius: var(--radius-full);
-        font-size: 0.875rem;
+        font-size: 0.75rem;
         font-weight: 500;
-        font-family: 'Roboto', Arial, sans-serif;
+        font-family: 'Inter', 'Roboto', Arial, sans-serif;
     }
 
     .status-success {
-        background: rgba(76, 175, 80, 0.1);
-        color: #2e7d32;
-        border: 1px solid rgba(76, 175, 80, 0.2);
+        background: rgba(56, 161, 105, 0.1);
+        color: #2F855A;
+        border: 1px solid rgba(56, 161, 105, 0.2);
     }
 
     .status-info {
-        background: rgba(10, 102, 194, 0.1);
-        color: #0d47a1;
-        border: 1px solid rgba(10, 102, 194, 0.2);
+        background: rgba(49, 130, 206, 0.1);
+        color: #2C5282;
+        border: 1px solid rgba(49, 130, 206, 0.2);
     }
+
 
     .status-danger {
         background: rgba(227, 6, 19, 0.1);
-        color: #c62828;
+        color: #C53030;
         border: 1px solid rgba(227, 6, 19, 0.2);
     }
 
     .status-neutral {
-        background: rgba(245, 245, 245, 0.5);
+        background: rgba(247, 250, 252, 0.5);
         color: var(--black);
         border: 1px solid var(--neutral);
     }
 
-    /* Point clignotant premium */
+    /* Point clignotant premium amélioré */
     .pulse-dot {
         display: inline-block;
         width: 0.5rem;
@@ -2289,10 +2631,10 @@
         animation: pulse 2s infinite;
     }
 
-    /* Boutons d'action premium */
+    /* Boutons d'action premium améliorés */
     .action-buttons {
         display: flex;
-        gap: 0.5rem;
+        gap: var(--space-sm);
     }
 
     .action-btn {
@@ -2304,6 +2646,7 @@
         border-radius: var(--radius-sm);
         transition: var(--transition);
         box-shadow: var(--shadow-sm);
+        border: 1px solid var(--neutral-dark);
     }
 
     .action-btn svg {
@@ -2317,21 +2660,21 @@
         margin: 0;
     }
 
-    /* Vue cartes premium */
+    /* Vue cartes premium améliorée */
     .cards-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 1.5rem;
-        padding: 2rem;
+        gap: var(--space-lg);
+        padding: var(--space-xl);
     }
 
     .data-card {
         background: var(--white);
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-xl);
         box-shadow: var(--shadow-md);
         overflow: hidden;
         transition: var(--transition);
-        border: 1px solid var(--neutral);
+        border: 1px solid var(--neutral-dark);
     }
 
     .data-card:hover {
@@ -2340,7 +2683,7 @@
     }
 
     .card-top {
-        padding: 1.5rem;
+        padding: var(--space-lg);
         border-bottom: 1px solid var(--neutral);
         position: relative;
     }
@@ -2359,6 +2702,7 @@
         color: var(--white);
         font-weight: 600;
         transition: var(--transition);
+        font-size: 0.875rem;
     }
 
     .data-card:hover .card-badge {
@@ -2369,23 +2713,24 @@
         font-size: 1.125rem;
         font-weight: 600;
         color: var(--black);
-        margin-bottom: 0.25rem;
+        margin-bottom: var(--space-xs);
     }
 
     .card-top p {
         font-size: 0.875rem;
         color: var(--black);
+        opacity: 0.7;
     }
 
     .card-middle {
-        padding: 1.5rem;
+        padding: var(--space-lg);
     }
 
     .card-row {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem 0;
+        gap: var(--space-md);
+        padding: var(--space-sm) 0;
         border-bottom: 1px solid var(--neutral);
     }
 
@@ -2398,6 +2743,7 @@
         height: 1rem;
         color: var(--black);
         flex-shrink: 0;
+        opacity: 0.7;
     }
 
     .text-success {
@@ -2414,6 +2760,7 @@
 
     .text-neutral {
         color: var(--black);
+        opacity: 0.7;
     }
 
     .card-bottom {
@@ -2426,8 +2773,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.5rem;
-        padding: 1rem;
+        gap: var(--space-sm);
+        padding: var(--space-md);
         font-size: 0.875rem;
         font-weight: 500;
         transition: var(--transition);
@@ -2458,9 +2805,9 @@
         color: var(--black);
     }
 
-    /* État vide premium */
+    /* État vide premium amélioré */
     .empty-state {
-        padding: 4rem 2rem;
+        padding: var(--space-2xl) var(--space-xl);
         text-align: center;
         background: var(--white);
         border-radius: var(--radius-lg);
@@ -2472,13 +2819,14 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 1rem;
+        gap: var(--space-md);
     }
 
     .empty-content svg {
         width: 4rem;
         height: 4rem;
         color: var(--black);
+        opacity: 0.5;
     }
 
     .empty-content h3 {
@@ -2490,24 +2838,26 @@
     .empty-content p {
         font-size: 0.875rem;
         color: var(--black);
-        margin-bottom: 1.5rem;
+        opacity: 0.7;
+        margin-bottom: var(--space-lg);
     }
 
-    /* Pagination premium */
+    /* Pagination premium améliorée */
     .pagination-container {
         display: flex;
         flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
-        gap: 1rem;
-        padding: 1.5rem 2rem;
-        border-top: 1px solid var(--neutral);
+        gap: var(--space-md);
+        padding: var(--space-lg) var(--space-xl);
+        border-top: 1px solid var(--neutral-dark);
         background: var(--white);
     }
 
     .pagination-info {
         font-size: 0.875rem;
         color: var(--black);
+        opacity: 0.7;
     }
 
     .pagination-info span {
@@ -2517,14 +2867,15 @@
 
     .pagination-links {
         display: flex;
-        gap: 0.5rem;
+        gap: var(--s-xs);
     }
+
 
     .pagination-link {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1rem;
+        gap: var(--space-xs);
+        padding: var(--space-sm) var(--space-md);
         border-radius: var(--radius-md);
         background: var(--white);
         color: var(--black);
@@ -2532,7 +2883,7 @@
         font-weight: 500;
         transition: var(--transition);
         text-decoration: none;
-        border: 1px solid var(--neutral);
+        border: 1px solid var(--neutral-dark);
     }
 
     .pagination-link:hover {
@@ -2546,6 +2897,220 @@
         color: var(--white);
         border-color: var(--primary);
     }
+            .map-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: var(--space-lg);
+            height: 500px;
+        }
+
+        .map-visual {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            border: 1px solid var(--neutral-dark);
+            height: 100%;
+            position: relative;
+        }
+
+        #interactive-map {
+            height: 100%;
+            width: 100%;
+            z-index: 1;
+        }
+
+        .map-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: var(--white);
+            padding: 12px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            width: 200px;
+        }
+
+        .map-controls h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+        }
+
+        .map-controls h3 i {
+            margin-right: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 8px;
+            border: 2px solid var(--white);
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .legend-label {
+            font-size: 12px;
+        }
+
+        .map-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .map-action-btn {
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            transition: var(--transition);
+        }
+
+        .map-action-btn:hover {
+            background: #14451b;
+        }
+
+        .map-action-btn i {
+            font-size: 12px;
+        }
+
+        /* Popup personnalisé */
+        .custom-popup {
+            padding: 10px;
+            min-width: 250px;
+        }
+
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--neutral-dark);
+        }
+
+        .popup-title {
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 16px;
+        }
+
+        .popup-status {
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+
+        .status-autorise {
+            background: rgba(56, 161, 105, 0.2);
+            color: #2F855A;
+        }
+
+        .status-anarchique {
+            background: rgba(227, 6, 19, 0.2);
+            color: #C53030;
+        }
+
+        .status-libre {
+            background: rgba(49, 130, 206, 0.2);
+            color: #2C5282;
+        }
+
+        .popup-details {
+            margin-bottom: 10px;
+        }
+
+        .popup-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .popup-detail .label {
+            color: var(--black);
+            opacity: 0.7;
+        }
+
+        .popup-detail .value {
+            font-weight: 500;
+        }
+
+        .popup-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .popup-btn {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .popup-btn i {
+            margin-right: 5px;
+            font-size: 12px;
+        }
+
+        .btn-view {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-edit {
+            background: var(--secondary);
+            color: var(--black);
+        }
+
+        /* Ajustements responsives */
+        @media (max-width: 968px) {
+            .map-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .map-controls {
+                position: relative;
+                top: 0;
+                right: 0;
+                width: 100%;
+                margin-top: 15px;
+            }
+
+            #interactive-map {
+                height: 400px;
+            }
+        }
 
     .pagination-link.disabled {
         opacity: 0.5;
@@ -2569,14 +3134,14 @@
         border: 0;
     }
 
-    /* Responsive premium */
+    /* Responsive premium amélioré */
     @media (max-width: 1200px) {
         .dashboard-container {
-            padding: 1.5rem;
+            padding: var(--space-lg);
         }
 
         .dashboard-title {
-            font-size: 1.75rem;
+            font-size: 2rem;
         }
 
         .stats-grid {
@@ -2601,6 +3166,7 @@
         .header-actions {
             flex-direction: column;
             width: 100%;
+            justify-content: flex-start;
         }
 
         .quick-stats {
@@ -2626,13 +3192,20 @@
 
         .control-right {
             width: 100%;
-            margin-top: 1rem;
+            margin-top: var(--space-md);
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .control-actions {
+            width: 100%;
+            justify-content: flex-end;
         }
     }
 
     @media (max-width: 640px) {
         .dashboard-title {
-            font-size: 1.5rem;
+            font-size: 1.75rem;
         }
 
         .dashboard-subtitle {
@@ -2649,6 +3222,7 @@
 
         .pagination-container {
             flex-direction: column;
+            gap: var(--space-md);
         }
 
         .filter-actions {
@@ -2657,8 +3231,18 @@
 
         .chart-summary {
             flex-direction: column;
-            gap: 1rem;
+            gap: var(--space-md);
+        }
+
+        .header-actions {
+            gap: var(--space-sm);
+        }
+
+        .action-btn {
+            padding: var(--space-sm) var(--space-md);
+            font-size: 0.8125rem;
         }
     }
 </style>
+
 @endsection

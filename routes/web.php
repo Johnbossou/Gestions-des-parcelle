@@ -19,8 +19,10 @@ Route::middleware('guest')->group(function () {
     Route::get('/password/reset', [AuthController::class, 'showPasswordResetForm'])->name('password.request');
     Route::post('/password/email', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
     Route::get('/password/reset/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
-    Route::post('/password/reset', [AuthController::class, 'resetPassword'])->name('password.update');
+    Route::post('/password/reset', [AuthController::class, 'resetPassword'])->name('password.reset.update');
+    Route::get('/parcelles/import', [ParcelleController::class, 'importForm'])->name('parcelles.import');
 });
+
 Route::middleware(['auth', 'permission:export-parcels'])->group(function () {
     Route::get('/parcelles/export', [ParcelleController::class, 'export'])
         ->name('parcelles.export');
@@ -46,10 +48,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit')->middleware('permission:manage-users');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update')->middleware('permission:manage-users');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy')->middleware('permission:manage-users');
+    Route::get('/parcelles/import', [ParcelleController::class, 'importForm'])->name('parcelles.import');
 });
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [UserController::class, 'showProfile'])->name('profile');
     Route::get('/password/change', [UserController::class, 'showChangePasswordForm'])->name('password.change');
     Route::post('/password/update', [UserController::class, 'changePassword'])->name('password.update');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/parcelles/import', [ParcelleController::class, 'importForm'])
+        ->name('parcelles.import.form');
+    Route::post('/parcelles/import', [ParcelleController::class, 'import'])
+        ->name('parcelles.import');
 });

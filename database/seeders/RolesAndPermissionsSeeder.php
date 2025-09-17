@@ -4,7 +4,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
-use App\Models\User;
+use App\Models\Utilisateur; // ← Modifié ici
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -17,6 +17,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'delete-parcelles',
             'view-parcels',
             'export-parcels',
+            'import-parcelles',
             'filter-sort-parcels',
             'edit-coordinates',
             'manage-users',
@@ -42,6 +43,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'edit-parcelles',
             'view-parcels',
             'export-parcels',
+            'import-parcelles',
             'filter-sort-parcels',
             'edit-coordinates',
             'manage-litiges',
@@ -110,6 +112,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'export-parcels',
             'filter-sort-parcels',
             'view-structure',
+            'delete-parcelles',
         ]);
 
         // Migration des associations utilisateurs (optionnel mais recommandé)
@@ -126,7 +129,8 @@ class RolesAndPermissionsSeeder extends Seeder
         ];
 
         foreach ($roleMappings as $oldRole => $newRole) {
-            $users = User::whereHas('roles', function($query) use ($oldRole) {
+            // ← Modifié ici: User -> Utilisateur
+            $users = Utilisateur::whereHas('roles', function($query) use ($oldRole) {
                 $query->where('name', $oldRole);
             })->get();
 
