@@ -4,8 +4,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "postbuild": "if exist public\\build\\.vite\\manifest.json move public\\build\\.vite\\manifest.json public\\build\\",
-    "clean": "rd /s /q public\\build .vite node_modules\\.vite"
+    "postbuild": "node scripts/move-manifest.mjs",
+    "clean": "node -e \"require('fs').rmSync('public/build',{recursive:true,force:true});require('fs').rmSync('node_modules/.vite',{recursive:true,force:true})\""
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.10",
