@@ -18,6 +18,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY resources/css resources/css
 COPY resources/js resources/js
+COPY scripts scripts
 COPY vite.config.js ./
 RUN npm run build
 
