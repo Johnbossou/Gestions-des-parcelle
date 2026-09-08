@@ -3,13 +3,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ParcelleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\HomeController;
 
-Route::get('/', function () {
-    return Auth::check()
-        ? redirect()->route('dashboard')
-        : redirect()->route('login');
-})->name('home');
+Route::get('/', HomeController::class)->name('home');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');

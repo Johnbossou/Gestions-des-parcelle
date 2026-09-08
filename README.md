@@ -7,6 +7,7 @@ Application Laravel 12 de gestion du registre numérique des parcelles (réserve
 - PHP ≥ 8.2 (testé sous PHP 8.2.0 / XAMPP)
 - MySQL / MariaDB ≥ 8 (XAMPP : `C:\xampp\mysql\bin\mysqld.exe`)
 - Composer 2
+- Node.js ≥ 20 + `package-lock.json` (build des assets Vite)
 - Extensions PHP : `pdo_mysql`, `zip`, `gd` ou `imagick`, `mbstring`, `fileinfo`, `xml`
 
 ## Installation
@@ -94,6 +95,34 @@ vendor\bin\phpunit.bat
 ```
 
 La suite couvre l'authentification, les permissions, le CRUD parcelles, l'import/export et le contrôle directeur (bdd sqlite en mémoire dans `phpunit.xml`).
+
+## Déploiement sur Railway
+
+Fichiers inclus : `Dockerfile` (multi-étapes : composer, build Vite, runtime PHP-FPM 8.2), `railway.json` (healthcheck sur `/up`) et `.dockerignore`.
+
+1. Poussez le dépôt sur GitHub, puis dans Railway : **New Project → Deploy from GitHub repo**.
+2. Ajoutez une base de données : **`+ Deploy` → MySQL**.
+3. Référencez les variables de la base dans les variables d'environnement du service web :
+   - `DB_CONNECTION=mysql`
+   - `DB_HOST=${{MySQL.MYSQLHOST}}`
+   - `DB_PORT=${{MySQL.MYSQLPORT}}`
+   - `DB_DATABASE=${{MySQL.MYSQLDATABASE}}`
+   - `DB_USERNAME=${{MySQL.MYSQLUSER}}`
+   - `DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}`
+4. Variables d'environnement applicatives (Variables → **Raw Editor** ou une par une) :
+   - `APP_ENV=production`
+   - `APP_DEBUG=false`
+   - `APP_URL=https://<votre-sous-domaine>.up.railway.app`
+   - `APP_KEY=base64:...` → générez-la localement avec `php artisan key:generate --show` puis collez-la.
+   - `SESSION_DRIVER=database` (table `sessions` migrée automatiquement au premier démarrage)
+   - `CACHE_STORE=database`
+   - `QUEUE_CONNECTION=database`
+   - `LOG_CHANNEL=stderr`
+5. Les migrations + `storage:link` s'exécutent automatiquement au démarrage du conteneur (la commande par défaut du `Dockerfile`).
+
+> Après le premier déploiement, peuplez les rôles/permissions : `railway run php artisan db:seed --class=RolesAndPermissionsSeeder` depuis le service web (ou en Local Shell), puis créez le premier utilisateur via l'interface `/register`.
+
+> En production, `APP_DEBUG` doit rester `false` : les erreurs passent uniquement dans les logs Railway (`storage/logs/laravel.log` ou stdout avec `LOG_CHANNEL=stderr`).
 
 ## Dépannage
 
