@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('validations_log', function (Blueprint $table) {
             $table->id();
             $table->string('action'); // Ex: 'parcelle_update'
-            $table->foreignId('user_id')->constrained(); // Superviseur qui a fait l'action
+            $table->foreignId('user_id')->constrained('utilisateurs'); // Superviseur qui a fait l'action
             $table->foreignId('director_id')->constrained('utilisateurs'); // Directeur qui a validé
             $table->string('ip_address');
             $table->timestamps();

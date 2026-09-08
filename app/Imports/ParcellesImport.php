@@ -3,17 +3,16 @@
 namespace App\Imports;
 
 use App\Models\Parcelle;
-use App\Models\User;
-use App\Models\AuditLog;
-use App\Models\ValidationLog;
+use App\Models\Utilisateur;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
+use Maatwebsite\Excel\Concerns\WithUpserts;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Illuminate\Support\Facades\Auth;
 
-class ParcellesImport implements ToModel, WithHeadingRow, WithValidation, WithBatchInserts, WithChunkReading
+class ParcellesImport implements ToModel, WithHeadingRow, WithValidation, WithUpserts, WithBatchInserts, WithChunkReading
 {
     /**
      * @param array $row
@@ -34,58 +33,43 @@ class ParcellesImport implements ToModel, WithHeadingRow, WithValidation, WithBa
             ? $row['nouvelle_superficie'] - $row['ancienne_superficie']
             : null;
 
-        // Utiliser updateOrCreate pour upsert (évite les doublons sur 'parcelle')
-        $parcelle = Parcelle::updateOrCreate(
-            ['parcelle' => $row['parcelle']],
-            [
-                'numero' => $row['numero'] ?? null,
-                'arrondissement' => $row['arrondissement'],
-                'secteur' => $row['secteur'],
-                'lot' => $row['lot'],
-                'designation' => $row['designation'] ?? null,
-                'ancienne_superficie' => $row['ancienne_superficie'] ?? null,
-                'nouvelle_superficie' => $row['nouvelle_superficie'] ?? null,
-                'ecart_superficie' => $ecartSuperficie,
-                'motif' => $row['motif'] ?? null,
-                'observations' => $row['observations'] ?? null,
-                'type_terrain' => $this->validateEnum($row['type_terrain'] ?? null, ['Résidentiel', 'Commercial', 'Agricole', 'Institutionnel', 'Autre']),
-                'statut_attribution' => $this->validateEnum($row['statut_attribution'] ?? null, ['attribué', 'non attribué']),
-                'litige' => isset($row['litige']) ? filter_var($row['litige'], FILTER_VALIDATE_BOOLEAN) : null,
-                'details_litige' => $row['details_litige'] ?? null,
-                'structure' => $row['structure'] ?? null,
-                'date_mise_a_jour' => $this->parseDate($row['date_mise_a_jour'] ?? null),
-                'latitude' => $row['latitude'] ?? null,
-                'longitude' => $row['longitude'] ?? null,
-                'agent' => $agentId,
-                'agent_name' => $row['agent_name'] ?? null,
-                'responsable_id' => $responsableId,
-                'responsable_name' => $row['responsable_name'] ?? null,
-                'updated_by' => $updatedById ?? $userId,
-                'created_by' => $createdById ?? $userId,
-            ]
-        );
-
-        // Log dans audit_logs
-        AuditLog::create([
-            'user_id' => $userId,
-            'action' => $parcelle->wasRecentlyCreated ? 'create' : 'update',
-            'model_type' => 'Parcelle',
-            'model_id' => $parcelle->id,
-            'changes' => json_encode($row), // Ou calcule un diff pour plus de précision
+        $parcelle = new Parcelle([
+            'numero' => $row['numero'] ?? null,
+            'arrondissement' => $row['arrondissement'],
+            'secteur' => $row['secteur'],
+            'lot' => $row['lot'],
+            'designation' => $row['designation'] ?? null,
+            'ancienne_superficie' => $row['ancienne_superficie'] ?? null,
+            'nouvelle_superficie' => $row['nouvelle_superficie'] ?? null,
+            'ecart_superficie' => $ecartSuperficie,
+            'motif' => $row['motif'] ?? null,
+            'observations' => $row['observations'] ?? null,
+            'type_occupation' => $this->validateEnum($row['type_occupation'] ?? null, ['Autorisé', 'Anarchique', 'Libre']),
+            'statut_attribution' => $this->validateEnum($row['statut_attribution'] ?? null, ['attribué', 'non attribué']),
+            'litige' => isset($row['litige']) ? filter_var($row['litige'], FILTER_VALIDATE_BOOLEAN) : null,
+            'details_litige' => $row['details_litige'] ?? null,
+            'structure' => $row['structure'] ?? null,
+            'date_mise_a_jour' => $this->parseDate($row['date_mise_a_jour'] ?? null),
+            'latitude' => $row['latitude'] ?? null,
+            'longitude' => $row['longitude'] ?? null,
+            'agent' => $agentId,
+            'agent_name' => $row['agent_name'] ?? null,
+            'responsable_id' => $responsableId,
+            'responsable_name' => $row['responsable_name'] ?? null,
+            'updated_by' => $updatedById ?? $userId,
+            'created_by' => $createdById ?? $userId,
+            'parcelle' => $row['parcelle'],
         ]);
 
-        // Log dans validations_log si c'est un update (cohérent avec ton middleware require.director.approval)
-        if (!$parcelle->wasRecentlyCreated) {
-            ValidationLog::create([
-                'parcelle_id' => $parcelle->id,
-                'action' => 'parcelle_update',
-                'user_id' => $userId,
-                'director_id' => $userId, // À ajuster si besoin d'un directeur spécifique (ex. : rôle 'Directeur')
-                'ip_address' => request()->ip(),
-            ]);
-        }
-
         return $parcelle;
+    }
+
+    /**
+     * Colonne utilisée pour l'upsert (évite les doublons sur 'parcelle').
+     */
+    public function uniqueBy(): array
+    {
+        return ['parcelle'];
     }
 
     /**
@@ -98,7 +82,7 @@ class ParcellesImport implements ToModel, WithHeadingRow, WithValidation, WithBa
             'arrondissement' => 'required|string|max:255',
             'secteur' => 'required|string|max:255',
             'lot' => 'required|integer|min:1',
-            'type_terrain' => 'nullable|in:Résidentiel,Commercial,Agricole,Institutionnel,Autre',
+            'type_occupation' => 'nullable|in:Autorisé,Anarchique,Libre',
             'statut_attribution' => 'nullable|in:attribué,non attribué',
             'litige' => 'nullable|boolean',
             'latitude' => 'nullable|numeric|between:-90,90',
@@ -117,10 +101,10 @@ class ParcellesImport implements ToModel, WithHeadingRow, WithValidation, WithBa
     {
         if (!$value) return null;
         if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
-            $user = User::where('email', $value)->first();
+            $user = Utilisateur::where('email', $value)->first();
             return $user ? $user->id : null;
         }
-        return is_numeric($value) && User::where('id', $value)->exists() ? (int) $value : null;
+        return is_numeric($value) && Utilisateur::where('id', $value)->exists() ? (int) $value : null;
     }
 
     private function validateEnum($value, array $allowed): ?string
@@ -140,11 +124,11 @@ class ParcellesImport implements ToModel, WithHeadingRow, WithValidation, WithBa
 
     public function batchSize(): int
     {
-        return 500; // Ajuste selon la mémoire serveur (plus petit pour logs par ligne)
+        return 500;
     }
 
     public function chunkSize(): int
     {
-        return 500; // Lecture par chunks pour fichiers larges
+        return 500;
     }
 }

@@ -510,7 +510,7 @@
                             <td class="col-date">{{ $parcelle->updated_at ? \Carbon\Carbon::parse($parcelle->updated_at)->format('d/m/Y') : 'N/A' }}</td>
                             <td class="col-coords">{{ $parcelle->latitude ? number_format($parcelle->latitude, 6) : 'N/A' }}</td>
                             <td class="col-coords">{{ $parcelle->longitude ? number_format($parcelle->longitude, 6) : 'N/A' }}</td>
-                            <td class="col-agent">{{ $parcelle->agent_id ?? 'N/A' }}</td>
+                            <td class="col-agent">{{ $parcelle->agent ?? 'N/A' }}</td>
                             <td class="col-responsable">{{ $parcelle->responsable_id ?? 'N/A' }}</td>
                             <td class="col-updatedby">{{ $parcelle->updated_by ?? 'N/A' }}</td>
                             <td class="col-createdby">{{ $parcelle->created_by ?? 'N/A' }}</td>

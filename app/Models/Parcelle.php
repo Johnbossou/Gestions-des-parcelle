@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\ValidationLog;
+use App\Models\AuditLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -36,17 +37,11 @@ class Parcelle extends Model
         'latitude',
         'longitude',
         'agent',
+        'agent_name',
         'responsable_id',
+        'responsable_name',
         'created_by',
         'updated_by'
-    ];
-
-    protected $dates = [
-        'date_mise_a_jour',
-        'date_autorisation',
-        'date_expiration_autorisation',
-        'created_at',
-        'updated_at',
     ];
 
     protected $casts = [
@@ -89,6 +84,37 @@ class Parcelle extends Model
                 $parcelle->updated_by = Auth::id();
             }
         });
+
+        static::created(function ($parcelle) {
+            self::logAudit($parcelle, 'create', $parcelle->getAttributes());
+        });
+
+        static::updated(function ($parcelle) {
+            $changed = $parcelle->getChanges();
+            $action = array_diff(array_keys($changed), ['latitude', 'longitude', 'updated_at', 'updated_by']) === []
+                ? 'update_coordinates'
+                : 'update';
+            self::logAudit($parcelle, $action, $changed);
+        });
+
+        static::deleted(function ($parcelle) {
+            self::logAudit($parcelle, 'delete', []);
+        });
+    }
+
+    protected static function logAudit(Parcelle $parcelle, string $action, array $changes): void
+    {
+        if (!Auth::check()) {
+            return;
+        }
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'action' => $action,
+            'model_type' => Parcelle::class,
+            'model_id' => $parcelle->id,
+            'changes' => json_encode($changes),
+        ]);
     }
 
     // CORRECTION : Relations avec le modèle Utilisateur au lieu de User

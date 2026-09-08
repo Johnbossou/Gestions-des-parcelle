@@ -8,7 +8,7 @@
         <div class="header-content">
             <h1 class="page-title" id="page-title">
                 <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M极 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 极 4 4 0 018 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
                 <span>Gestion des utilisateurs</span>
             </h1>
@@ -30,7 +30,7 @@
     <div class="search-container">
         <div class="search-wrapper">
             <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0极" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
             </svg>
             <input type="text" id="user-search" placeholder="Rechercher un utilisateur..." aria-label="Rechercher des utilisateurs par nom ou email">
         </div>
@@ -71,7 +71,7 @@
                             <button class="sort-btn" data-sort="email" aria-label="Trier par email">
                                 Email
                                 <svg aria-hidden="true" class="sort-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4极-4 4l-4-4" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                                 </svg>
                             </button>
                         </th>
@@ -85,17 +85,10 @@
                         <td>
                             <div class="user-info">
                                 <div class="user-avatar" aria-label="Avatar de {{ $user->name }}">
-                                    @if ($user->avatar)
-                                        <img src="{{ $user->avatar }}" alt="Avatar de {{ $user->name }}" class="avatar-img">
-                                    @else
                                         {{ strtoupper(substr($user->name, 0, 1)) }}
-                                    @endif
                                 </div>
                                 <div class="user-details">
                                     <div class="user-name">{{ $user->name }}</div>
-                                    <div class="user-status {{ $user->active ? 'active' : 'inactive' }}">
-                                        {{ $user->active ? 'Actif' : 'Inactif' }}
-                                    </div>
                                 </div>
                             </div>
                         </td>
@@ -143,7 +136,7 @@
                         @else
                             <li>
                                 <a href="{{ $users->previousPageUrl() }}" class="pagination-arrow" rel="prev" aria-label="Page précédente">
-                                    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 极 16">
+                                    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                         <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
                                     </svg>
                                 </a>
@@ -174,7 +167,7 @@
                             <li class="disabled" aria-disabled="true">
                                 <span class="pagination-arrow">
                                     <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0极6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l-6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
                                     </svg>
                                 </span>
                             </li>
@@ -223,7 +216,7 @@
 
         /* Ombres */
         --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-        --shadow-md: 0 4px 8px rgba(0, 0, 0, 极.15);
+        --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
         --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.2);
 
         /* Rayons */
@@ -371,7 +364,7 @@
         transform: translateY(-2px);
     }
 
-    .btn sv极 {
+    .btn svg {
         width: 1.25rem;
         height: 1.25rem;
     }
@@ -388,7 +381,7 @@
         display: flex;
         align-items: center;
         background: var(--white);
-        border-radius: var(--极-md);
+        border-radius: var(--radius-md);
         padding: 0.5rem 1rem;
         box-shadow: var(--shadow-sm);
         transition: var(--transition-all);
@@ -519,7 +512,7 @@
         transition: var(--transition-all);
     }
 
-    .sort-btn.asc .极-icon {
+    .sort-btn.asc .sort-icon {
         transform: rotate(180deg);
     }
 
@@ -817,7 +810,7 @@
         to { opacity: 1; transform: translateY(0); }
     }
 
-    @keyframes slide极Down {
+    @keyframes slideDown {
         from { opacity: 0; transform: translateY(-20px); }
         to { opacity: 1; transform: translateY(0); }
     }
@@ -961,12 +954,10 @@
         // Exemple de toast après soumission du formulaire (à intégrer côté serveur)
         deleteForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            // Simulation AJAX
-            setTimeout(() => {
-                showToast('Utilisateur supprimé avec succès');
-                modal.style.display = 'none';
-                // Recharger la page ou supprimer la ligne via DOM
-            }, 500);
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+                return;
+            }
+            deleteForm.submit();
         });
     });
 </script>

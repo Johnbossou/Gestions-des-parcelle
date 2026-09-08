@@ -9,6 +9,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // 0. Supprimer l'index composite avant de retirer la colonne type_terrain
+        Schema::table('parcelles', function (Blueprint $table) {
+            $table->dropIndex('parcelles_main_index');
+        });
+
         // 1. Supprimer la colonne type_terrain
         Schema::table('parcelles', function (Blueprint $table) {
             $table->dropColumn('type_terrain');
@@ -42,10 +47,8 @@ return new class extends Migration
                   ->comment('Date d\'expiration de l\'autorisation');
         });
 
-        // 3. Mettre à jour l'index composite
+        // 3. Re-créer l'index composite avec type_occupation
         Schema::table('parcelles', function (Blueprint $table) {
-            $table->dropIndex('parcelles_main_index');
-
             $table->index(
                 [
                     'numero',
@@ -64,6 +67,11 @@ return new class extends Migration
 
     public function down(): void
     {
+        // 0. Supprimer l'index composite avant de retirer type_occupation
+        Schema::table('parcelles', function (Blueprint $table) {
+            $table->dropIndex('parcelles_main_index');
+        });
+
         // 1. Supprimer les nouvelles colonnes
         Schema::table('parcelles', function (Blueprint $table) {
             $table->dropColumn([
@@ -84,8 +92,6 @@ return new class extends Migration
 
         // 3. Rétablir l'ancien index
         Schema::table('parcelles', function (Blueprint $table) {
-            $table->dropIndex('parcelles_main_index');
-
             $table->index(
                 [
                     'numero',

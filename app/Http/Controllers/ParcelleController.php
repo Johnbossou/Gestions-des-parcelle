@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Parcelle;
 use App\Imports\ParcellesImport;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Hash;
-use App\Models\AuditLog;
 use App\Models\ValidationLog;
 use Illuminate\Support\Facades\DB;
 use App\Models\Utilisateur;
@@ -15,7 +13,6 @@ use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
 use App\Enums\TypeOccupation;
 
 class ParcelleController extends Controller
@@ -27,9 +24,8 @@ class ParcelleController extends Controller
         $this->middleware('permission:view-parcels')->only(['index', 'show', 'filter']);
         $this->middleware('permission:create-parcelles')->only(['create', 'store']);
         $this->middleware('permission:edit-parcelles')->only(['edit', 'update']);
-        $this->middleware('permission:delete-parcels')->only('destroy');
+        $this->middleware('permission:delete-parcelles')->only('destroy');
         $this->middleware('permission:edit-coordinates')->only(['editCoordinates', 'updateCoordinates']);
-        $this->middleware('permission:manage-litiges')->only(['store', 'update']);
         $this->middleware('permission:import-parcelles')->only(['importForm', 'import']);
     }
 
@@ -58,6 +54,13 @@ class ParcelleController extends Controller
         }
         if ($request->filled('ancienne_superficie_max')) {
             $query->where('ancienne_superficie', '<=', $request->ancienne_superficie_max);
+        }
+        // Ajouter dans le controller
+        if ($request->filled('nouvelle_superficie_min')) {
+            $query->where('nouvelle_superficie', '>=', $request->nouvelle_superficie_min);
+        }
+        if ($request->filled('nouvelle_superficie_max')) {
+            $query->where('nouvelle_superficie', '<=', $request->nouvelle_superficie_max);
         }
 
         $query->orderBy('updated_at', 'desc');
@@ -170,45 +173,36 @@ class ParcelleController extends Controller
             'litige' => 'required|boolean',
             'details_litige' => 'nullable|string',
             'structure' => 'nullable|string',
-            'agent_id' => 'nullable',
+            'agent' => 'nullable',
             'agent_name' => 'nullable|string|max:255',
             'responsable_id' => 'nullable',
             'responsable_name' => 'nullable|string|max:255',
         ]);
 
         // Gestion Agent “Autre…”
-        if ($request->agent_id === 'custom' && $request->filled('agent_name')) {
+        if ($request->agent === 'custom' && $request->filled('agent_name')) {
             $agent = Utilisateur::create(['name' => $request->agent_name]);
-            $data['agent_id'] = $agent->id;
+            $data['agent'] = $agent->id;
+            $data['agent_name'] = $request->agent_name;
         } else {
-            $data['agent_id'] = $request->agent_id ?: null;
+            $data['agent'] = $request->agent ?: null;
         }
 
         // Gestion Responsable “Autre…”
         if ($request->responsable_id === 'custom' && $request->filled('responsable_name')) {
             $responsable = Utilisateur::create(['name' => $request->responsable_name]);
             $data['responsable_id'] = $responsable->id;
+            $data['responsable_name'] = $request->responsable_name;
         } else {
             $data['responsable_id'] = $request->responsable_id ?: null;
         }
 
-        // Générer numéro unique
-        do {
-            $data['numero'] = rand(1000, 9999);
-        } while (Parcelle::where('numero', $data['numero'])->exists());
+        $data['numero'] = (Parcelle::max('numero') ?? 0) + 1;
 
         $data['created_by'] = Auth::id();
         $data['updated_by'] = Auth::id();
 
         $parcelle = Parcelle::create($data);
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'create',
-            'model_type' => Parcelle::class,
-            'model_id' => $parcelle->id,
-            'changes' => json_encode($data),
-        ]);
 
         return $request->expectsJson()
             ? response()->json($parcelle, 201)
@@ -232,7 +226,7 @@ class ParcelleController extends Controller
     public function update(Request $request, Parcelle $parcelle)
     {
         $data = $request->validate([
-            'numero' => 'required|numeric|unique:parcelles,numero,' . $parcelle->id,
+            'numero' => 'nullable|numeric|unique:parcelles,numero,' . $parcelle->id,
             'arrondissement' => 'required|string',
             'secteur' => 'required|string',
             'lot' => 'required|numeric',
@@ -253,35 +247,28 @@ class ParcelleController extends Controller
             'litige' => 'required|boolean',
             'details_litige' => 'nullable|string',
             'structure' => 'nullable|string',
-            'agent_id' => 'nullable',
+            'agent' => 'nullable',
             'agent_name' => 'nullable|string|max:255',
             'responsable_id' => 'nullable',
             'responsable_name' => 'nullable|string|max:255',
         ]);
 
         // Gestion Agent “Autre…”
-        if ($request->agent_id === 'custom' && $request->filled('agent_name')) {
+        if ($request->agent === 'custom' && $request->filled('agent_name')) {
             $agent = Utilisateur::create(['name' => $request->agent_name]);
-            $data['agent_id'] = $agent->id;
+            $data['agent'] = $agent->id;
+            $data['agent_name'] = $request->agent_name;
         } else {
-            $data['agent_id'] = $request->agent_id ?: null;
+            $data['agent'] = $request->agent ?: null;
         }
 
         // Gestion Responsable “Autre…”
         if ($request->responsable_id === 'custom' && $request->filled('responsable_name')) {
             $responsable = Utilisateur::create(['name' => $request->responsable_name]);
             $data['responsable_id'] = $responsable->id;
+            $data['responsable_name'] = $request->responsable_name;
         } else {
             $data['responsable_id'] = $request->responsable_id ?: null;
-        }
-
-        if (Auth::user()->hasRole('chef_service')) {
-            $request->validate(['director_password' => 'required|string']);
-
-            $director = Utilisateur::role('Directeur')->first();
-            if (!$director || !Hash::check($request->director_password, $director->password)) {
-                return back()->withErrors(['director_password' => 'Mot de passe du Directeur incorrect'])->withInput();
-            }
         }
 
         $data['updated_by'] = Auth::id();
@@ -290,20 +277,13 @@ class ParcelleController extends Controller
         if (!empty($changes)) {
             $parcelle->update($data);
 
-            AuditLog::create([
-                'user_id' => Auth::id(),
-                'action' => 'update',
-                'model_type' => Parcelle::class,
-                'model_id' => $parcelle->id,
-                'changes' => json_encode($changes),
-            ]);
-
             if (Auth::user()->hasRole('chef_service')) {
+                $director = Utilisateur::role('Directeur')->first();
                 ValidationLog::create([
                     'parcelle_id' => $parcelle->id,
                     'action' => 'parcelle_update',
                     'user_id' => Auth::id(),
-                    'director_id' => $director->id,
+                    'director_id' => $director?->id,
                     'ip_address' => $request->ip(),
                 ]);
             }
@@ -318,13 +298,6 @@ class ParcelleController extends Controller
     public function destroy(Parcelle $parcelle)
     {
         $parcelle->delete();
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'delete',
-            'model_type' => Parcelle::class,
-            'model_id' => $parcelle->id,
-            'changes' => [],
-        ]);
 
         return request()->expectsJson()
             ? response()->json(['message' => 'Parcelle supprimée'])
@@ -348,13 +321,6 @@ class ParcelleController extends Controller
 
         if (!empty($changes)) {
             $parcelle->update($data);
-            AuditLog::create([
-                'user_id' => Auth::id(),
-                'action' => 'update_coordinates',
-                'model_type' => Parcelle::class,
-                'model_id' => $parcelle->id,
-                'changes' => json_encode($changes),
-            ]);
         }
 
         return $request->expectsJson()
@@ -364,38 +330,65 @@ class ParcelleController extends Controller
 
     public function filter(Request $request)
     {
-        $query = Parcelle::query();
+        $query = Parcelle::query()->with(['agent', 'responsable']);
 
-        if ($request->has('arrondissement') && $request->arrondissement) {
-            $query->where('arrondissement', $request->arrondissement);
+        // Filtres
+        if ($request->filled('arrondissement')) {
+            $query->whereRaw('LOWER(arrondissement) = ?', [strtolower($request->arrondissement)]);
         }
-        if ($request->has('type_occupation') && $request->type_occupation) {
+        if ($request->filled('type_occupation')) {
             $query->where('type_occupation', $request->type_occupation);
         }
-        if ($request->has('statut_attribution') && $request->statut_attribution) {
+        if ($request->filled('statut_attribution')) {
             $query->where('statut_attribution', $request->statut_attribution);
         }
-        if ($request->has('litige') && $request->litige !== '') {
+        if ($request->filled('litige') && $request->litige !== '') {
             $query->where('litige', $request->litige === '1');
         }
-        if ($request->has('structure') && $request->structure) {
-            $query->where('structure', 'like', '%' . $request->structure . '%');
+        if ($request->filled('structure')) {
+            $query->whereRaw('LOWER(structure) LIKE ?', ['%' . strtolower($request->structure) . '%']);
         }
-        if ($request->has('sort_by')) {
-            $query->orderBy($request->sort_by, $request->input('sort_direction', 'asc'));
+        if ($request->filled('ancienne_superficie_min')) {
+            $query->where('ancienne_superficie', '>=', $request->ancienne_superficie_min);
+        }
+        if ($request->filled('ancienne_superficie_max')) {
+            $query->where('ancienne_superficie', '<=', $request->ancienne_superficie_max);
+        }
+        if ($request->filled('nouvelle_superficie_min')) {
+            $query->where('nouvelle_superficie', '>=', $request->nouvelle_superficie_min);
+        }
+        if ($request->filled('nouvelle_superficie_max')) {
+            $query->where('nouvelle_superficie', '<=', $request->nouvelle_superficie_max);
         }
 
+        // Tri
+        if ($request->filled('sort_by')) {
+            $query->orderBy($request->sort_by, $request->input('sort_direction', 'asc'));
+        } else {
+            $query->orderBy('updated_at', 'desc');
+        }
+
+        // Pagination
         return response()->json($query->paginate(10)->appends($request->query()));
     }
 
+
     public function export(Request $request)
     {
+        // Récupérer tous les filtres
         $filters = $request->only([
-            'arrondissement', 'type_occupation', 'statut_attribution',
-            'litige', 'structure', 'ancienne_superficie_min', 'ancienne_superficie_max'
+            'arrondissement',
+            'type_occupation',
+            'statut_attribution',
+            'litige',
+            'structure',
+            'ancienne_superficie_min',
+            'ancienne_superficie_max',
+            'nouvelle_superficie_min',
+            'nouvelle_superficie_max'
         ]);
 
-        // Convertir les valeurs d'énumération en string pour l'export
+        // Convertir la valeur de l'énumération en string si nécessaire
         $filtersForExport = $filters;
         if (isset($filtersForExport['type_occupation']) && $filtersForExport['type_occupation'] instanceof \App\Enums\TypeOccupation) {
             $filtersForExport['type_occupation'] = $filtersForExport['type_occupation']->value;
@@ -414,6 +407,7 @@ class ParcelleController extends Controller
 
         return Excel::download($export, 'parcelles.xlsx');
     }
+
 
     public function importForm()
     {

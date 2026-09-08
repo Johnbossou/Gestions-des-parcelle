@@ -14,7 +14,7 @@ class AuditLogSeeder extends Seeder
         $users = Utilisateur::pluck('id')->toArray();
         $parcelles = Parcelle::pluck('id')->toArray();
         $actions = ['create', 'update', 'delete'];
-        $fields = ['nouvelle_superficie', 'litige', 'structure', 'type_terrain'];
+        $fields = ['nouvelle_superficie', 'litige', 'structure', 'type_occupation'];
 
         for ($i = 1; $i <= 20; $i++) {
             AuditLog::create([

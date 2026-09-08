@@ -108,7 +108,7 @@
                 </svg>
                 <div>
                     <h4>Rétrocompatibilité</h4>
-                    <p>Les anciens fichiers avec <strong>type_terrain</strong> sont toujours acceptés :<br>
+                    <p>Les anciens fichiers avec <strong>type_terrain</strong> sont toujours acceptés (compatibilité ascendante) : :<br>
                        - "Résidentiel", "Commercial", "Institutionnel", "Agricole" → "Autorisé"<br>
                        - "Autre" → "Anarchique"</p>
                 </div>

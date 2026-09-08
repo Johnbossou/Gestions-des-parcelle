@@ -1,61 +1,102 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Gestion des Réserves Foncières (gestion-parcelles)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Application Laravel 12 de gestion du registre numérique des parcelles (réserves foncières) d'une mairie : suivi des parcelles, occupations, attributions, litiges, supervision et journalisation.
 
-## About Laravel
+## Prérequis
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP ≥ 8.2 (testé sous PHP 8.2.0 / XAMPP)
+- MySQL / MariaDB ≥ 8 (XAMPP : `C:\xampp\mysql\bin\mysqld.exe`)
+- Composer 2
+- Extensions PHP : `pdo_mysql`, `zip`, `gd` ou `imagick`, `mbstring`, `fileinfo`, `xml`
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Installation
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```bash
+copy .env.example .env      # puis adaptez DB_DATABASE / DB_USERNAME / DB_PASSWORD / APP_KEY
+composer install --no-interaction --no-scripts
+php artisan key:generate
+php artisan migrate --seed   # crée le schéma + rôles/permissions + utilisateurs de démonstration
+php artisan storage:link
+```
 
-## Learning Laravel
+> Note reproductibilité : `composer.json` + `composer.lock` sont suivis par git ; un `composer install` depuis zéro reproduit exactement les 48 paquets vérouillés. Ne pas lancer `composer update` sans raison.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Démarrage (Windows/XAMPP sans service MySQL installé)
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+Script fourni (démarre MySQL si nécessaire puis le serveur Laravel) :
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```
+start-dev.bat
+```
 
-## Laravel Sponsors
+Ou manuellement :
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+# 1. MySQL (si le port 3306 est libre)
+C:\xampp\mysql\bin\mysqld.exe --defaults-file=C:\xampp\mysql\bin\my.ini
 
-### Premium Partners
+# 2. Serveur
+php artisan serve --host=127.0.0.1 --port=8000
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Puis ouvrir http://127.0.0.1:8000
 
-## Contributing
+### Option service Windows (dans une console administrateur)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bat
+C:\xampp\mysql\bin\mysqld.exe --install MariaDB --defaults-file=C:\xampp\mysql\bin\my.ini
+net start MariaDB
+```
 
-## Code of Conduct
+Le service démarre alors MySQL automatiquement au boot. (Le `start-dev.bat` reste utile pour le serveur Laravel.)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Base de données
 
-## Security Vulnerabilities
+- `DB_DATABASE` : `Reserves_fonc` (charset `utf8mb4`, collation `utf8mb4_unicode_ci`)
+- Modèle utilisateur : table `utilisateurs` (l'ancienne table `users` de Laravel n'est pas utilisée)
+- `migrate:fresh` reconstruit l'intégralité du schéma (toutes les clés étrangères pointent vers `utilisateurs`).
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Rôles et permissions
 
-## License
+Installés par `RolesAndPermissionsSeeder` (Spatie Permissions).
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Rôles : `chef_service`, `chef_division`, `Directeur`, `dsi`, `secretaire_executif`, `Consultant`.
+
+Permissions :
+`create-parcelles`, `edit-parcelles`, `delete-parcelles`, `view-parcels`, `export-parcels`, `import-parcelles`, `filter-sort-parcels`, `edit-coordinates`, `manage-users`, `manage-litiges`, `view-structure`, `create-view-users`.
+
+## Comptes de démonstration (seed)
+
+| Email | Mot de passe | Rôle |
+|---|---|---|
+| aline.sossou@mairie.bj | password123 | chef_service |
+| jean.dupont@mairie.bj | (non défini par le seed — compte pré-existant) | chef_service |
+| sophie.gbedji@mairie.bj | password123 | chef_division |
+| koffi.mensah@mairie.bj | DirectorPass123! | Directeur |
+| paul.dsi@mairie.bj | password123 | dsi |
+| marie.koffi@mairie.bj | password123 | Consultant |
+
+## Fonctionnalités clés
+
+- CRUD parcelles (index + cartes, filtres, recherche, tri, pagination).
+- Import Excel/CSV et export XLSX/CSV (Maatwebsite Excel).
+- Suivi des occupations (Autorisé / Anarchique / Libre) et statuts d'attribution.
+- Coordonnées GPS (Leaflet) avec permissions `edit-coordinates`.
+- Journal d'audit automatique (`AuditLog`) sur chaque création/modification/suppression.
+- Journal de validation : la modification de champs sensibles par un `chef_service` exige le mot de passe du Directeur (middleware `RequireDirectorApproval`).
+- Gestion des utilisateurs & rôles (dsi / assignation de rôles Spatie).
+- Authentification + réinitialisation de mot de passe (Sanctum).
+
+## Tests
+
+```bash
+vendor\bin\phpunit.bat
+```
+
+La suite couvre l'authentification, les permissions, le CRUD parcelles, l'import/export et le contrôle directeur (bdd sqlite en mémoire dans `phpunit.xml`).
+
+## Dépannage
+
+- **Erreur 500 en production sans détail** : vérifier `storage/logs/laravel.log` (`.env` : `APP_DEBUG=true` en développement).
+- **`SQLSTATE[HY000] [2002] connection refused`** : MySQL n'est pas démarré (voir Démarrage).
+- **`composer install` échoue sur avast/antivirus** : ne pas relancer tant que le verrou est actif ; un simple `composer dump-autoload --no-scripts --optimize` suffit le plus souvent (le `vendor` ne doit pas être régénéré à chaud).

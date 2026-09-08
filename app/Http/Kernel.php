@@ -1,4 +1,3 @@
-```php
 <?php
 namespace App\Http;
 
@@ -64,7 +63,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'auth.sanctum' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
-        'require.director' => \App\Http\Middleware\RequireDirectorPassword::class,
+        'require.director' => \App\Http\Middleware\RequireDirectorApproval::class,
         'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
 

@@ -50,6 +50,14 @@ class ParcellesExport implements FromCollection, WithHeadings, WithMapping
             $query->where('ancienne_superficie', '<=', $this->filters['ancienne_superficie_max']);
         }
 
+        if (!empty($this->filters['nouvelle_superficie_min'])) {
+            $query->where('nouvelle_superficie', '>=', $this->filters['nouvelle_superficie_min']);
+        }
+
+        if (!empty($this->filters['nouvelle_superficie_max'])) {
+            $query->where('nouvelle_superficie', '<=', $this->filters['nouvelle_superficie_max']);
+        }
+
         return $query->get();
     }
 
@@ -115,7 +123,7 @@ class ParcellesExport implements FromCollection, WithHeadings, WithMapping
             $parcelle->structure,
             $parcelle->latitude,
             $parcelle->longitude,
-            $parcelle->agent_id,
+            $parcelle->agent,
             $parcelle->responsable_id,
             $parcelle->updated_by,
             $parcelle->created_by,

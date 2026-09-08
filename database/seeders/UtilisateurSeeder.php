@@ -11,9 +11,6 @@ class UtilisateurSeeder extends Seeder
 {
     public function run(): void
     {
-        // S'assurer que les rôles et permissions existent
-        $this->call(RolesAndPermissionsSeeder::class);
-
         $users = [
             [
                 'name' => 'Jean Dupont',

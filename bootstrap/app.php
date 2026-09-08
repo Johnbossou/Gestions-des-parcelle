@@ -19,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
 
             // Middlewares personnalisés
-            'require.director' => \App\Http\Middleware\RequireDirectorPassword::class,
+            'require.director' => \App\Http\Middleware\RequireDirectorApproval::class,
             'require.director.approval' => \App\Http\Middleware\RequireDirectorApproval::class,
 
             // Middlewares Laravel par défaut
@@ -39,6 +39,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (\Spatie\Permission\Exceptions\UnauthorizedException $e, Request $request) {
             return $request->expectsJson()
                 ? response()->json(['message' => 'Vous n\'avez pas la permission nécessaire.'], 403)
-                : redirect()->route('dashboard')->with('error', 'Accès non autorisé.');
+                : response('Accès non autorisé.', 403);
         });
     })->create();

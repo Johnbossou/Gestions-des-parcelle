@@ -888,7 +888,7 @@
 
         // Restaurer l'état des champs personnalisés
         @if(old('agent_name'))
-            document.getElementById('agent_id').style.display = 'none';
+            document.getElementById('agent').style.display = 'none';
             document.getElementById('agent_input').style.display = 'block';
         @endif
 

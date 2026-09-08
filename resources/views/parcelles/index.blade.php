@@ -3,8 +3,8 @@
 @section('content')
 
 <!-- Intégration des scripts -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
@@ -88,6 +88,7 @@
                     </button>
 
                     <form action="{{ route('parcelles.export') }}" method="GET" class="dropdown-menu" id="export-form">
+                        <!-- Filtres existants -->
                         <input type="hidden" name="arrondissement" value="{{ request('arrondissement') }}">
                         <input type="hidden" name="type_occupation" value="{{ request('type_occupation') }}">
                         <input type="hidden" name="statut_attribution" value="{{ request('statut_attribution') }}">
@@ -95,7 +96,11 @@
                         <input type="hidden" name="structure" value="{{ request('structure') }}">
                         <input type="hidden" name="ancienne_superficie_min" value="{{ request('ancienne_superficie_min') }}">
                         <input type="hidden" name="ancienne_superficie_max" value="{{ request('ancienne_superficie_max') }}">
+                        <!-- Nouveaux filtres ajoutés -->
+                        <input type="hidden" name="nouvelle_superficie_min" value="{{ request('nouvelle_superficie_min') }}">
+                        <input type="hidden" name="nouvelle_superficie_max" value="{{ request('nouvelle_superficie_max') }}">
 
+                        <!-- Bouton Export Excel -->
                         <button type="submit" name="format" value="excel" class="dropdown-item flex items-center gap-2 px-4 py-2 rounded-md hover:bg-green-100 text-green-700 font-medium transition">
                             <svg viewBox="0 0 24 24" width="18" height="18" class="text-green-600">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
@@ -104,15 +109,14 @@
                             Exporter en Excel
                         </button>
 
-
-                        <button type="submit" name="format" value="pdf" class="dropdown-item">
+                        <!-- Bouton Export PDF -->
+                        <button type="submit" name="format" value="pdf" class="dropdown-item flex items-center gap-2 px-4 py-2 rounded-md hover:bg-red-100 text-red-700 font-medium transition">
                             <svg viewBox="0 0 24 24" width="16" height="16">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
                                 <path d="M14 2v6h6M8 12h1m3 0h1m2-2H8v4h7v-2m0 0h1"/>
                             </svg>
-                            PDF
+                            Exporter en PDF
                         </button>
-
                     </form>
                 </div>
                 @endcan
@@ -449,6 +453,7 @@
             </div>
             <div id="advanced-filters" class="filter-content">
                 <form id="filter-form" class="filter-grid" method="GET" action="{{ route('parcelles.index') }}">
+                    <!-- Arrondissement -->
                     <div class="filter-group">
                         <label for="arrondissement">Arrondissement</label>
                         <div class="select-wrapper">
@@ -461,6 +466,8 @@
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
                         </div>
                     </div>
+
+                    <!-- Type d'Occupation -->
                     <div class="filter-group">
                         <label for="type_occupation">Type d'Occupation</label>
                         <div class="select-wrapper">
@@ -474,6 +481,7 @@
                         </div>
                     </div>
 
+                    <!-- Statut d'attribution -->
                     <div class="filter-group">
                         <label for="statut_attribution">Statut</label>
                         <div class="select-wrapper">
@@ -486,6 +494,8 @@
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
                         </div>
                     </div>
+
+                    <!-- Litige -->
                     <div class="filter-group">
                         <label for="litige">Litige</label>
                         <div class="select-wrapper">
@@ -497,10 +507,14 @@
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
                         </div>
                     </div>
+
+                    <!-- Structure -->
                     <div class="filter-group">
                         <label for="structure">Structure</label>
                         <input type="text" name="structure" id="structure" value="{{ request('structure') }}" placeholder="Rechercher une structure...">
                     </div>
+
+                    <!-- Superficie ancienne -->
                     <div class="filter-group">
                         <label for="ancienne_superficie_min">Superficie min (ancienne)</label>
                         <input type="number" step="0.01" name="ancienne_superficie_min" id="ancienne_superficie_min" value="{{ request('ancienne_superficie_min') }}" placeholder="Min">
@@ -509,7 +523,18 @@
                         <label for="ancienne_superficie_max">Superficie max (ancienne)</label>
                         <input type="number" step="0.01" name="ancienne_superficie_max" id="ancienne_superficie_max" value="{{ request('ancienne_superficie_max') }}" placeholder="Max">
                     </div>
+
+                    <!-- Superficie nouvelle -->
+                    <div class="filter-group">
+                        <label for="nouvelle_superficie_min">Superficie min (nouvelle)</label>
+                        <input type="number" step="0.01" name="nouvelle_superficie_min" id="nouvelle_superficie_min" value="{{ request('nouvelle_superficie_min') }}" placeholder="Min">
+                    </div>
+                    <div class="filter-group">
+                        <label for="nouvelle_superficie_max">Superficie max (nouvelle)</label>
+                        <input type="number" step="0.01" name="nouvelle_superficie_max" id="nouvelle_superficie_max" value="{{ request('nouvelle_superficie_max') }}" placeholder="Max">
+                    </div>
                 </form>
+
                 <div class="filter-actions">
                     <button type="submit" form="filter-form" class="action-btn apply-btn" aria-label="Appliquer les filtres">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>
@@ -537,7 +562,7 @@
                     </svg>
                     <h3>Aucune parcelle trouvée</h3>
                     <p>Modifiez vos filtres ou créez une nouvelle parcelle.</p>
-                    @can('create-parcels')
+                    @can('create-parcelles')
                     <a href="{{ route('parcelles.create') }}" class="action-btn create-btn" aria-label="Créer une nouvelle parcelle">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16m8-8H4"/></svg>
                         Créer une parcelle
@@ -1166,9 +1191,11 @@
             });
 
             // Fermer le dropdown en cliquant ailleurs
-            document.addEventListener('click', function() {
-                dropdownToggle.setAttribute('aria-expanded', 'false');
-                dropdownMenu.classList.remove('show');
+            document.addEventListener('click', function(e) {
+                if (!exportDropdown.contains(e.target)) {
+                    dropdownToggle.setAttribute('aria-expanded', 'false');
+                    dropdownMenu.classList.remove('show');
+                }
             });
 
             // Empêcher la fermeture en cliquant dans le dropdown

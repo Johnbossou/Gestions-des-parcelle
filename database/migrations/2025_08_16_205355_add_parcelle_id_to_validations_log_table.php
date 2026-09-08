@@ -39,9 +39,6 @@ public function up()
 
             // Supprimer la colonne
             $table->dropColumn('parcelle_id');
-
-            // Supprimer l'index
-            $table->dropIndex(['parcelle_id']);
         });
     }
 };
